@@ -2,11 +2,13 @@
 	export let name;
 	import Datetime from "./components/datetime.svelte"
 	import Weather from "./components/weather.svelte"
+	import Message from "./components/message.svelte"
 </script>
 
 <main>
 	<Datetime></Datetime>
 	<Weather></Weather>
+	<Message></Message>
 </main>
 
 <style>

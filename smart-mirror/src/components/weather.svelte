@@ -6,6 +6,7 @@
     var high
     var weatherCat
     var weatherText
+    var iconUrl
     function getWeather() {
         var key = "508e30d810aea35edea2114e557bca90"
         let xhr = new XMLHttpRequest()
@@ -17,11 +18,12 @@
             else {
                 let data = JSON.parse(xhr.response)
                 console.log(data)
-                low = data.main.temp_min
-                high = data.main.temp_max
-                temp = data.main.temp
+                low = Math.ceil(data.main.temp_min * 9/5 - 459.67)
+                high = Math.ceil(data.main.temp_max * 9/5 - 459.67)
+                temp = Math.ceil(data.main.temp * 9/5 - 459.67)
                 weatherCat = data.weather[0].main
                 weatherText = data.weather[0].description
+                iconUrl = `http://openweathermap.org/img/wn/${data.weather[0].icon}@4x.png`
             }
         }
     }
@@ -34,7 +36,12 @@
 
 <main>
     <p>{weatherText}</p>
-    <img src="svg/wi-barometer.svg">
+    <img src={iconUrl}>
+    <p>Currently: {temp}°F</p>
+    <div class="tempMinMax">
+        <p>Low: {low}°</p>
+        <p>High: {high}°</p>
+    </div>
 </main>
 
 <style>
@@ -53,5 +60,13 @@
         margin-right: 20px;
         font-weight: 100;
         font-size: 3em;
+    }
+    .tempMinMax {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-around;
+    }
+    .tempMinMax p{
+        font-size: 1.75em;
     }
 </style>
