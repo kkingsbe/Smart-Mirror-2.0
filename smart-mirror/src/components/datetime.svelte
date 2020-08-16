@@ -29,7 +29,7 @@
         top: 0;
     }
     .time {
-        font-size: 3em;
+        font-size: 5em;
     }
     .time h1 {
         margin: 0;
@@ -37,7 +37,7 @@
         font-weight: 100;
     }
     .date {
-        font-size: 2em;
+        font-size: 3em;
         margin-left: 20px;
         font-weight: 100;
     }

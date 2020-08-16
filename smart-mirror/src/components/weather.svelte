@@ -49,6 +49,7 @@
         position: fixed;
         right: 0;
         top: 0;
+        margin-top: 35px;
     }
     img {
         filter: invert(100%);
@@ -57,7 +58,7 @@
     }
     p {
         margin: 0;
-        margin-right: 20px;
+        margin-right: 40px;
         font-weight: 100;
         font-size: 3em;
     }
@@ -67,6 +68,6 @@
         justify-content: space-around;
     }
     .tempMinMax p{
-        font-size: 1.75em;
+        font-size: 2em;
     }
 </style>
