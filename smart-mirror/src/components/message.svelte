@@ -4,7 +4,6 @@
   setInterval(() => {
     date = new Date()
     let hour = date.getHours()
-    console.log(hour)
 
     if(hour >= 5 && hour < 12) {
       greetingText = "Good Morning :)"

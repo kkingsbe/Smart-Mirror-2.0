@@ -52,8 +52,7 @@
         margin-top: 35px;
     }
     img {
-        filter: invert(100%);
-        width: 150px;
+        width: 250px;
         height: auto;
     }
     p {
