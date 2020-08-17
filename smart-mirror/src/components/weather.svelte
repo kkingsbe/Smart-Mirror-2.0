@@ -7,6 +7,8 @@
     var weatherCat
     var weatherText
     var iconUrl
+    
+    var flightRules
 
     function getWeather() {
         var key = "508e30d810aea35edea2114e557bca90"
@@ -29,9 +31,28 @@
         }
     }
 
+    function getFlightRules() {
+        var key = "q2fO8NJl6jYZGoTCAGHDUvbNj5mHlSmlRyFpvlwB9yo"
+        let xhr = new XMLHttpRequest()
+        xhr.open("GET", `https://avwx.rest/api/metar/kdab`)
+        xhr.setRequestHeader("Authorization", key)
+        xhr.send()
+
+        xhr.onload = function() {
+            if(xhr.status != 200) alert(`Error ${xhr.status}: ${xhr.statusText}`)
+            else {
+                let data = JSON.parse(xhr.response)
+                flightRules = data.flight_rules
+            }
+        }
+    }
+
+    getFlightRules()
+
     getWeather()
     setInterval(() => {
         getWeather()
+        getFlightRules()
     }, 180000)
 
     function titleCase(str) {
@@ -54,6 +75,7 @@
         <p>Low: {low}°</p>
         <p>High: {high}°</p>
     </div>
+    <p class="flight-rules">Flight Rules: {flightRules}</p>
 </main>
 
 <style>
@@ -80,5 +102,8 @@
     }
     .tempMinMax p{
         font-size: 2em;
+    }
+    .flight-rules {
+        margin-top: 70px;
     }
 </style>
