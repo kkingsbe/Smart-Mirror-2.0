@@ -7,6 +7,7 @@
     var weatherCat
     var weatherText
     var iconUrl
+
     function getWeather() {
         var key = "508e30d810aea35edea2114e557bca90"
         let xhr = new XMLHttpRequest()
@@ -22,7 +23,7 @@
                 high = Math.ceil(data.main.temp_max * 9/5 - 459.67)
                 temp = Math.ceil(data.main.temp * 9/5 - 459.67)
                 weatherCat = data.weather[0].main
-                weatherText = data.weather[0].description
+                weatherText = titleCase(data.weather[0].description)
                 iconUrl = `http://openweathermap.org/img/wn/${data.weather[0].icon}@4x.png`
             }
         }
@@ -32,6 +33,17 @@
     setInterval(() => {
         getWeather()
     }, 180000)
+
+    function titleCase(str) {
+        var splitStr = str.toLowerCase().split(' ');
+        for (var i = 0; i < splitStr.length; i++) {
+            // You do not need to check if i is larger than splitStr length, as your for does that for you
+            // Assign it back to the array
+            splitStr[i] = splitStr[i].charAt(0).toUpperCase() + splitStr[i].substring(1);     
+        }
+        // Directly return the joined string
+        return splitStr.join(' '); 
+    }
 </script>
 
 <main>
