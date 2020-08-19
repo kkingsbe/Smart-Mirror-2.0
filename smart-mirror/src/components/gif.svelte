@@ -42,7 +42,7 @@
   }
 
   function nextGif() {
-    currentGif == 143 ? currentGif ++ : currentGif = 0
+    currentGif == 143 ? currentGif = 0 : currentGif ++
     gifUrl = gifs[currentGif].images.original.url
   }
 </script>
