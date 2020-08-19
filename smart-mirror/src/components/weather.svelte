@@ -69,7 +69,7 @@
     <p>{weatherText}</p>
     <img src={iconUrl}>
     <p>Currently: {temp}°F</p>
-    <p>Feels like: {feelsLike} °F</p>
+    <p>Feels like: {feelsLike}°F</p>
     <p class="flight-rules">Flight Rules: {flightRules}</p>
 </main>
 
