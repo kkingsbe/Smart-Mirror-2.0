@@ -2,11 +2,10 @@
     //Update every 3 mins
     var svgName = ""
     var temp
-    var low
-    var high
     var weatherCat
     var weatherText
     var iconUrl
+    var feelsLike
     
     var flightRules
 
@@ -21,9 +20,8 @@
             else {
                 let data = JSON.parse(xhr.response)
                 console.log(data)
-                low = Math.ceil(data.main.temp_min * 9/5 - 459.67)
-                high = Math.ceil(data.main.temp_max * 9/5 - 459.67)
                 temp = Math.ceil(data.main.temp * 9/5 - 459.67)
+                feelsLike = Math.ceil(data.main.feels_like * 9/5 - 459.67)
                 weatherCat = data.weather[0].main
                 weatherText = titleCase(data.weather[0].description)
                 iconUrl = `http://openweathermap.org/img/wn/${data.weather[0].icon}@4x.png`
@@ -71,10 +69,7 @@
     <p>{weatherText}</p>
     <img src={iconUrl}>
     <p>Currently: {temp}°F</p>
-    <div class="tempMinMax">
-        <p>Low: {low}°</p>
-        <p>High: {high}°</p>
-    </div>
+    <p>Feels like: {feelsLike} °F</p>
     <p class="flight-rules">Flight Rules: {flightRules}</p>
 </main>
 
@@ -94,6 +89,7 @@
         margin-right: 40px;
         font-weight: 100;
         font-size: 3em;
+        text-align: right;
     }
     .tempMinMax {
         display: flex;
