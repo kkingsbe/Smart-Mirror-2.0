@@ -13,10 +13,10 @@
   }
 
 
-  //Get a new set of gifs every 24h
+  //Get a new set of gifs every hour
   setInterval(() => {
     fetchGifs()
-  }, 86400000)
+  }, 3600000)
 
   //Set a new gif every 1min
   setInterval(() => {
@@ -42,7 +42,7 @@
   }
 
   function nextGif() {
-    currentGif == 143 ? currentGif = 0 : currentGif ++
+    currentGif == 49 ? currentGif = 0 : currentGif ++
     gifUrl = gifs[currentGif].images.original.url
   }
 </script>
