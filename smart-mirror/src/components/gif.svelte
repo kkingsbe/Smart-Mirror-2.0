@@ -18,10 +18,10 @@
     fetchGifs()
   }, 86400000)
 
-  //Set a new gif every 10min
+  //Set a new gif every 1min
   setInterval(() => {
     nextGif()
-  }, 600000)
+  }, 60000)
 
   async function fetchGifs() {
     return new Promise((resolve, reject) => {
