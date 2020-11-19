@@ -4,10 +4,12 @@
 	import Weather from "./components/weather.svelte"
 	import Gif from "./components/gif.svelte"
 	import Message from "./components/message.svelte"
+	import BTC from "./components/btc.svelte"
 </script>
 
 <main>
 	<Datetime></Datetime>
+	<BTC></BTC>
 	<Weather></Weather>
 	<Gif></Gif>
 	<Message></Message>
