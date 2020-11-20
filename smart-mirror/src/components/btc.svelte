@@ -23,7 +23,7 @@
 
     main()
 
-    setInterval(getPrice, 15000)
+    setInterval(main, 15000)
 </script>
 
 <main>
