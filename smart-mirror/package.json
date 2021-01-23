@@ -16,7 +16,10 @@
     "svelte": "^3.0.0"
   },
   "dependencies": {
+    "fusioncharts": "^3.15.3",
     "sirv-cli": "^1.0.0",
+    "svelte-fusioncharts": "^1.0.0",
+    "svelte-youtube": "0.0.2",
     "weather-js": "^2.0.0"
   }
 }

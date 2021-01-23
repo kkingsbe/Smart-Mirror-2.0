@@ -5,13 +5,15 @@
 	import Gif from "./components/gif.svelte"
 	import Message from "./components/message.svelte"
 	import BTC from "./components/btc.svelte"
+	import Livestream from "./components/livestream.svelte"
 </script>
 
 <main>
 	<Datetime></Datetime>
 	<BTC></BTC>
 	<Weather></Weather>
-	<Gif></Gif>
+	<!--Gif></Gif-->
+	<Livestream></Livestream>
 	<Message></Message>
 </main>
 
