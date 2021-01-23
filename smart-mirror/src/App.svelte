@@ -12,8 +12,8 @@
 	<Datetime></Datetime>
 	<BTC></BTC>
 	<Weather></Weather>
-	<!--Gif></Gif-->
-	<Livestream></Livestream>
+	<Gif></Gif>
+	<!--Livestream></Livestream-->
 	<Message></Message>
 </main>
 
