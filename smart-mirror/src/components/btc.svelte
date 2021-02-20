@@ -23,7 +23,7 @@
 
     main()
 
-    setInterval(main, 15000)
+    setInterval(main, 60000)
 </script>
 
 <main>
