@@ -58,7 +58,7 @@
     async function getLatest(date) { //Date: year yyyy-mm-dd
       return new Promise((resolve, reject) => {
         let xhr = new XMLHttpRequest()
-        xhr.open("GET", `https://api.nasa.gov/mars-photos/api/v1/rovers/perseverance/photos?api_key=${key}&earth_date=${date}&camera=MCZ_RIGHT&camera=MCZ_LEFT`)
+        xhr.open("GET", `https://api.nasa.gov/mars-photos/api/v1/rovers/perseverance/photos?api_key=${key}&earth_date=${date}&camera=MCZ_RIGHT`)
         xhr.send()
   
         xhr.onload = function() {
