@@ -7,18 +7,13 @@
 	import BTC from "./components/btc.svelte"
 	import APOD from "./components/apod.svelte"
 	import PERCY_LATEST from "./components/percy_latest.svelte"
-	import Livestream from "./components/livestream.svelte"
 	import Image from "./components/image.svelte"
 </script>
 
 <main>
 	<Datetime></Datetime>
-	<!--BTC></BTC-->
 	<Weather></Weather>
-	<!--APOD></APOD-->
-	<!--PERCY_LATEST></PERCY_LATEST-->
-	<!--Gif></Gif-->
-	<Image></Image>
+	<PERCY_LATEST></PERCY_LATEST>
 	<Message></Message>
 </main>
 
