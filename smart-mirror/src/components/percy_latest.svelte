@@ -25,7 +25,7 @@
       currentPhotoIndex ++
       if(currentPhotoIndex > photoArr.length - 1) currentPhotoIndex = 0
       currentPhoto = photoArr[currentPhotoIndex]
-    }, 1200)
+    }, 5000)
 
     async function getMastcam() {
       var d = new Date(),
