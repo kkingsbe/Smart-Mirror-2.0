@@ -52,22 +52,25 @@
         date = [year, month, day].join('-')
         console.log(date)
       }
-      explanation = "Views from the surface of Mars, Sol " + sol
+      explanation = "Views from the surface of Mars, Sol " + sol + " (" + date + ")"
     }
   
     async function getLatest(date) { //Date: year yyyy-mm-dd
       return new Promise((resolve, reject) => {
         let xhr = new XMLHttpRequest()
-        xhr.open("GET", `https://api.nasa.gov/mars-photos/api/v1/rovers/perseverance/photos?api_key=${key}&earth_date=${date}&camera=MCZ_RIGHT`)
+        //xhr.open("GET", `https://api.nasa.gov/mars-photos/api/v1/rovers/perseverance/photos?api_key=${key}&earth_date=${date}&camera=MCZ_RIGHT`)
+        xhr.open("GET", `https://api.nasa.gov/mars-photos/api/v1/rovers/perseverance/latest_photos?api_key=${key}&earth_date=${date}`)
         xhr.send()
   
         xhr.onload = function() {
           if(xhr.status != 200) alert(`Error ${xhr.status}: ${xhr.statusText}`)
           else {
               let content = JSON.parse(xhr.response)
-              let photos = content.photos
-              if(content.photos.length > 0) {
-                sol = content.photos[0].sol
+              console.log(content)
+              //let photos = content.photos
+              let photos = content.latest_photos
+              if(content.latest_photos.length > 0) {
+                sol = content.latest_photos[0].sol
               }
               
               photoArr = []
