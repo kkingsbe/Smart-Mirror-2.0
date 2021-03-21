@@ -28,6 +28,8 @@
     }, 5000)
 
     async function getMastcam() {
+      photoArr = []
+      currentPhoto = "https://picsum.photos/seed/picsum/200/300"
       var d = new Date(),
         month = '' + (d.getMonth() + 1),
         day = '' + d.getDate(),
@@ -77,7 +79,7 @@
               for(let i in photos) {
                 photoArr.push(photos[i].img_src)
               }
-              console.log(photoArr)
+              //console.log(photoArr)
               resolve(photoArr)
           }
         }
