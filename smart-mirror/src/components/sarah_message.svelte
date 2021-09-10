@@ -1,6 +1,6 @@
 <script>
     var message = ""
-    var refreshInterval = 5000
+    var refreshInterval = 15000
     setInterval(() => {
         fetch("https://yz38okcnw1.execute-api.us-east-1.amazonaws.com/sarah-message")
         .then(response => response.json())
