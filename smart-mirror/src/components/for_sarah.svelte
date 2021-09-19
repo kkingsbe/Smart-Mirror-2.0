@@ -1,6 +1,6 @@
 <script>
     //version = aws-sdk-2.985.0.min.js
-    var picture_names = ["IMG-0339.jpg", "IMG-0374.JPG", "IMG-0392.jpg", "IMG-0398.JPG", "IMG-0400.JPG", "IMG-9269.JPG", "1.jpg", "2.jpg", "3.jpg", "4.jpg", "5.jpg", "6.jpg", "7.jpg", "8.jpg", "9.jpg", "10.jpg", "11.jpg", ]
+    var picture_names = ["IMG-0339.jpg", "IMG-0374.JPG", "IMG-0392.jpg", "IMG-0398.JPG", "IMG-0400.JPG", "IMG-9269.JPG", "1.jpg", "2.jpg", "3.jpg", "4.jpg", "5.jpg", "6.jpg", "7.jpg", "8.jpg", "9.jpg", "10.jpg", "11.jpg", "12.jpg", "13.jpg", "14.jpg", "15.jpg", "16.jpg"]
     var bucket = "https://smart-mirror-pictures.s3.amazonaws.com/"
     var i = 0
     var sarah_picture = bucket + picture_names[i]
