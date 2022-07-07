@@ -20,8 +20,8 @@
             else {
                 let data = JSON.parse(xhr.response)
                 console.log(data)
-                temp = Math.ceil(data.main.temp * 9/5 - 459.67)
-                feelsLike = Math.ceil(data.main.feels_like * 9/5 - 459.67)
+                temp = Math.ceil((data.main.temp - 273.15) * 9/5 + 32)
+                feelsLike = Math.ceil((data.main.feels_like - 273.15) * 9/5 + 32)
                 weatherCat = data.weather[0].main
                 weatherText = titleCase(data.weather[0].description)
                 iconUrl = `http://openweathermap.org/img/wn/${data.weather[0].icon}@4x.png`
