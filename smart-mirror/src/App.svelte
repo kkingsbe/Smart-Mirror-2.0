@@ -8,13 +8,16 @@
 	import APOD from "./components/apod.svelte"
 	import PERCY_LATEST from "./components/percy_latest.svelte"
 	import Image from "./components/image.svelte"
+	import ForSarah from "./components/for_sarah.svelte"
+	import SarahMessage from "./components/sarah_message.svelte"
+	import PercyLatest from "./components/percy_latest.svelte";
 </script>
 
 <main>
 	<Datetime></Datetime>
 	<Weather></Weather>
-	<PERCY_LATEST></PERCY_LATEST>
-	<Message></Message>
+	<ForSarah></ForSarah>
+	<SarahMessage></SarahMessage>
 </main>
 
 <style>
