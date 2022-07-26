@@ -1,5 +1,7 @@
 const mysql = require("mysql2")
 
+//const DATABASE_URL = <SECRET>
+
 exports.handler = async (event) => {
     const id = event.queryStringParameters.id
 
