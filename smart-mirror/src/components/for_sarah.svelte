@@ -40,6 +40,7 @@
     img {
         max-width: 70vw;
         max-height: 50vh;
+        image-orientation: from-image;
     }
     p {
         padding: 20px;
