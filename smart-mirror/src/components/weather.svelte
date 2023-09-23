@@ -12,7 +12,7 @@
     function getWeather() {
         var key = "508e30d810aea35edea2114e557bca90"
         let xhr = new XMLHttpRequest()
-        xhr.open("GET", `https://api.openweathermap.org/data/2.5/weather?zip=06786&APPID=${key}`)
+        xhr.open("GET", `https://api.openweathermap.org/data/2.5/weather?zip=32174&APPID=${key}`)
         xhr.send()
 
         xhr.onload = function() {
