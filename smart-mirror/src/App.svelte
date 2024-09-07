@@ -17,7 +17,7 @@
 	<Datetime></Datetime>
 	<Weather></Weather>
 	<ForSarah></ForSarah>
-	<SarahMessage></SarahMessage>
+	<Gif/>
 </main>
 
 <style>
