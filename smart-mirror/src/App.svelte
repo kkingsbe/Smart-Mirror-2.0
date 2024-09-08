@@ -11,13 +11,15 @@
 	import ForSarah from "./components/for_sarah.svelte"
 	import SarahMessage from "./components/sarah_message.svelte"
 	import PercyLatest from "./components/percy_latest.svelte";
+	import F1constructors from "./components/f1constructors.svelte"
+  	import F1image from "./components/f1image.svelte";
 </script>
 
 <main>
 	<Datetime></Datetime>
 	<Weather></Weather>
 	<ForSarah></ForSarah>
-	<Gif/>
+	<F1constructors></F1constructors>
 </main>
 
 <style>
