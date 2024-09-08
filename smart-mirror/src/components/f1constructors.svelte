@@ -84,6 +84,10 @@
     }
   }, 60000)
 
+  setInterval(() => {
+    fetchData()
+  }, 3600 * 1000)
+
   const myHeaders = new Headers();
   myHeaders.append("x-rapidapi-key", "9c70341bb6msh618a1b5f2fd5122p1d9bf1jsn81abf36906e5");
 
