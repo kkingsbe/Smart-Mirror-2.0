@@ -76,16 +76,22 @@
 
   let mode = "table"
 
-  setTimeout(() => {
+  setInterval(() => {
     if (mode === "table") {
       mode = "image"
     } else {
       mode = "table"
     }
-  }, 5000)
+  }, 60000)
 
   const myHeaders = new Headers();
   myHeaders.append("x-rapidapi-key", "9c70341bb6msh618a1b5f2fd5122p1d9bf1jsn81abf36906e5");
+
+  const requestOptions = {
+    method: "GET",
+    headers: myHeaders,
+    redirect: "follow"
+  };
 
   async function fetchData() {
     const response = await fetch("https://api-formula-1.p.rapidapi.com/rankings/teams?season=2024", requestOptions);
