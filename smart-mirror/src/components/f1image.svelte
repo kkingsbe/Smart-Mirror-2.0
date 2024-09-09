@@ -38,7 +38,7 @@
       <p>Loading...</p>
     {:else if imageData.farm && imageData.id && imageData.server}
       <Flickrimage farm={imageData.farm} id={imageData.id} secret={imageData.secret} server={imageData.server} />
-      <p>{imageData.title}</p>
+      <!-- <p>{imageData.title}</p> -->
     {:else}
       <p>No image data available</p>
     {/if}
@@ -49,9 +49,6 @@
       position: fixed;
       bottom: 250px;
       width: 100%;
-    }
-    img {
-      width: 50%;
     }
     p {
         padding: 20px;

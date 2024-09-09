@@ -3,7 +3,7 @@
     export let server;
     export let id;
     export let secret;
-    export let size = 'l'; // Default size is medium
+    export let size = 'xl'; // Default size is medium
 
     $: imageUrl = `https://farm${farm}.staticflickr.com/${server}/${id}_${secret}.jpg`;
 </script>

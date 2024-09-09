@@ -74,7 +74,7 @@
     }
   ]
 
-  let mode = "table"
+  let mode = "image"
 
   setInterval(() => {
     if (mode === "table") {
@@ -161,7 +161,7 @@
     margin-left: auto;
     margin-right: auto;
     font-weight: bold;
-    font-size: 1.5rem;
+    font-size: 2.0rem;
   }
 
   .constructor-team-name {

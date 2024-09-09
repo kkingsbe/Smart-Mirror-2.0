@@ -1,13 +1,15 @@
 <script>
     var message = ""
     var refreshInterval = 15000
-    setInterval(() => {
-        fetch("https://yz38okcnw1.execute-api.us-east-1.amazonaws.com/sarah-message")
-        .then(response => response.json())
-        .then(data => {
-            message = data
-        });
-    }, refreshInterval)
+
+    async function getMessage() {
+      const response = await fetch("https://yz38okcnw1.execute-api.us-east-1.amazonaws.com/sarah-message")
+      const data = await response.json()
+      message = data
+    }
+
+    setInterval(getMessage, refreshInterval)
+    getMessage()
 </script>
 
 <main>
