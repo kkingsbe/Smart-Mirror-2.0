@@ -74,7 +74,7 @@
     }
   ]
 
-  let mode = "image"
+  let mode = "table"
 
   setInterval(() => {
     if (mode === "table") {
@@ -149,7 +149,7 @@
 <style>
   .constructors-main {
     position: fixed;
-    bottom: 10px;
+    bottom: 200px;
     width: 100%;
   }
 
