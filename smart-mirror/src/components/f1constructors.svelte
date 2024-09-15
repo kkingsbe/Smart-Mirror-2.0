@@ -1,5 +1,6 @@
 <script>
   import F1image from "./f1image.svelte";
+  import APOD from "./apod.svelte"
 
   let constructorData = [
     {
@@ -74,7 +75,7 @@
     }
   ]
 
-  let mode = "table"
+  let mode = "image"
 
   setInterval(() => {
     if (mode === "table") {
@@ -142,14 +143,14 @@
     </div>
   </div>
 {:else}
-  <F1image></F1image>
+  <APOD></APOD>
 {/if}
 
 
 <style>
   .constructors-main {
     position: fixed;
-    bottom: 200px;
+    bottom: 300px;
     width: 100%;
   }
 

@@ -37,8 +37,8 @@
   </script>
   
   <main>
-    <img src={apodURL}>
-    <p>{explanation}</p>
+    <img src={apodURL} style="width: 80vw; max-width: 80%;">
+    <!-- <p>{explanation}</p> -->
   </main>
   
   <style>
