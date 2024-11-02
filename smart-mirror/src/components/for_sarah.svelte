@@ -47,7 +47,8 @@
     img {
         max-width: 70vw;
         max-height: 50vh;
-        image-orientation: from-image;
+        transform: rotate(0deg);
+        image-orientation: none;
     }
     p {
         padding: 20px;
