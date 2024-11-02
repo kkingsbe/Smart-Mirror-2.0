@@ -1,15 +1,22 @@
 <script>
-    //version = aws-sdk-2.985.0.min.js
-    
     var pictures = []
     var pictureDelay = 10000
     var sarah_picture
     var i = 0
 
     async function getPictures() {
-        await fetch("https://6qc2nozhc5vswl4vv4tqhlrklm0mvhuc.lambda-url.us-east-1.on.aws/?id=1")
-        .then(res => res.json())
-        .then(data => pictures = data)
+        try {
+            const response = await fetch('https://smart-mirror-admin.vercel.app/api/images/public/list');
+            const data = await response.json();
+            
+            if (data.success) {
+                pictures = data.urls.map(url => ({url}));
+            } else {
+                throw new Error('Failed to fetch images');
+            }
+        } catch (err) {
+            console.error("Error fetching pictures:", err);
+        }
     }
 
     async function init() {

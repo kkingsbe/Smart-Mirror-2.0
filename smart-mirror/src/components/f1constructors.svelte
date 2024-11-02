@@ -99,23 +99,37 @@
   };
 
   async function fetchData() {
-    const response = await fetch("https://api-formula-1.p.rapidapi.com/rankings/teams?season=2024", requestOptions);
-    const data = (await response.json()).response;
-    console.log(data);
-    console.log(JSON.stringify(data))
+    try {
+      const response = await fetch("https://api-formula-1.p.rapidapi.com/rankings/teams?season=2024", requestOptions);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = (await response.json()).response;
+      
+      if (!data || !Array.isArray(data)) {
+        throw new Error('Invalid data format received from API');
+      }
 
-    // const data = [{"position":1,"team":{"id":1,"name":"Red Bull Racing","logo":"https://media.api-sports.io/formula-1/teams/1.png"},"points":446,"season":2024},{"position":2,"team":{"id":2,"name":"McLaren Racing","logo":"https://media.api-sports.io/formula-1/teams/2.png"},"points":438,"season":2024},{"position":3,"team":{"id":3,"name":"Scuderia Ferrari\n","logo":"https://media.api-sports.io/formula-1/teams/3.png"},"points":407,"season":2024},{"position":4,"team":{"id":5,"name":"Mercedes-AMG Petronas","logo":"https://media.api-sports.io/formula-1/teams/5.png"},"points":292,"season":2024},{"position":5,"team":{"id":17,"name":"Aston Martin F1 Team","logo":"https://media.api-sports.io/formula-1/teams/17.png"},"points":74,"season":2024},{"position":6,"team":{"id":7,"name":"Visa Cash App RB Formula One Team","logo":"https://media.api-sports.io/formula-1/teams/7.png"},"points":34,"season":2024},{"position":7,"team":{"id":14,"name":"Haas F1 Team","logo":"https://media.api-sports.io/formula-1/teams/14.png"},"points":28,"season":2024},{"position":8,"team":{"id":13,"name":"Alpine F1 Team","logo":"https://media.api-sports.io/formula-1/teams/13.png"},"points":13,"season":2024},{"position":9,"team":{"id":12,"name":"Williams F1 Team","logo":"https://media.api-sports.io/formula-1/teams/12.png"},"points":6,"season":2024},{"position":10,"team":{"id":8,"name":"Sauber F1 Team","logo":"https://media.api-sports.io/formula-1/teams/8.png"},"points":0,"season":2024}]
+      data.forEach((team) => {
+        if (!team.team?.name) return;
+        
+        const teamName = team.team.name.trim();
+        const constructor = constructorData.find((c) => c.team_name === teamName);
+        if (constructor) {
+          constructor.points = team.points || 0;
+        }
+      });
 
-    data.map((team) => {
-      const teamName = team.team.name.trim();
-      const constructor = constructorData.find((c) => c.team_name === teamName);
-      constructor.points = team.points;
-    });
-
-    constructorData = constructorData.sort((a, b) => b.points - a.points);
-    constructorData.forEach((constructor, index) => {
-      constructor.position = index + 1;
-    });
+      constructorData = constructorData.sort((a, b) => b.points - a.points);
+      constructorData.forEach((constructor, index) => {
+        constructor.position = index + 1;
+      });
+    } catch (error) {
+      console.error('Error fetching F1 data:', error);
+      // Keep using existing data if there's an error
+    }
   }
 
   fetchData()
