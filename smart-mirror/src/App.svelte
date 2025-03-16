@@ -13,11 +13,13 @@
 	import PercyLatest from "./components/percy_latest.svelte";
 	import F1constructors from "./components/f1constructors.svelte"
   	import F1image from "./components/f1image.svelte";
+	import WeatherRadar from "./components/WeatherRadar.svelte";
 </script>
 
 <main>
 	<Datetime></Datetime>
 	<Weather></Weather>
+	<WeatherRadar></WeatherRadar>
 	<ForSarah></ForSarah>
 	<!-- <F1constructors></F1constructors> -->
 	<SarahMessage></SarahMessage>
