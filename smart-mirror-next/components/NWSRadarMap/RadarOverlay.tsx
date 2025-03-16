@@ -56,7 +56,7 @@ const RadarOverlay: React.FC<RadarOverlayProps> = ({
           position: 'absolute',
           bottom: 5,
           right: 5,
-          fontSize: '10px',
+          fontSize: '1.5rem',
           color: 'white',
           background: 'rgba(0, 0, 0, 0.7)',
           padding: '3px 6px',

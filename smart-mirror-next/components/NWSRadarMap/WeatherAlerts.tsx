@@ -140,7 +140,6 @@ const WeatherAlerts: React.FC<WeatherAlertsProps> = ({
         background: alertColor.bg,
         padding: '8px 12px',
         borderRadius: '4px',
-        fontSize: '12px',
         boxShadow: '0 2px 4px rgba(0, 0, 0, 0.5)',
         border: '1px solid rgba(255, 255, 255, 0.2)',
       }}
@@ -158,15 +157,9 @@ const WeatherAlerts: React.FC<WeatherAlertsProps> = ({
           alignItems: 'center',
         }}>
           <div style={{ 
-            marginRight: '8px',
-            display: 'flex',
-            alignItems: 'center',
-          }}>
-            {getAlertIcon(alert.event)}
-          </div>
-          <div style={{ 
             fontWeight: 'bold',
             whiteSpace: 'nowrap',
+            fontSize: '2rem',
           }}>
             {alert.event}
           </div>
@@ -176,12 +169,12 @@ const WeatherAlerts: React.FC<WeatherAlertsProps> = ({
           backgroundColor: 'rgba(0, 0, 0, 0.3)',
           color: 'white',
           borderRadius: '50%',
-          width: '20px',
-          height: '20px',
+          aspectRatio: '1/1',
+          padding: '0.5rem',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          fontSize: '10px',
+          fontSize: '1.25rem',
           fontWeight: 'bold',
           marginLeft: '8px',
           flexShrink: 0,
@@ -199,6 +192,7 @@ const WeatherAlerts: React.FC<WeatherAlertsProps> = ({
           scrollBehavior: 'smooth',
           borderTop: '1px solid rgba(255, 255, 255, 0.2)',
           paddingTop: '4px',
+          fontSize: '1.5rem',
         }}
       >
         {alert.headline || alert.description.substring(0, 100)}
