@@ -4,10 +4,14 @@ import { AlertColor, TileCoordinates, WeatherAlert } from './types';
  * Calculate tile coordinates from lat/lon for the base map
  */
 export const calculateTileCoordinates = (lat: number, lon: number, zoom: number): TileCoordinates => {
+  // Ensure lat and lon are valid numbers
+  const validLat = Number.isFinite(lat) ? Math.max(-85.05112878, Math.min(85.05112878, lat)) : 0;
+  const validLon = Number.isFinite(lon) ? ((lon + 540) % 360) - 180 : 0;
+  
   // Convert lat/lon to tile coordinates at the specified zoom level
   const n = Math.pow(2, zoom);
-  const xtile = ((lon + 180) / 360) * n;
-  const ytile = (1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * n;
+  const xtile = ((validLon + 180) / 360) * n;
+  const ytile = (1 - Math.log(Math.tan(validLat * Math.PI / 180) + 1 / Math.cos(validLat * Math.PI / 180)) / Math.PI) / 2 * n;
   
   // Get the integer part of the tile coordinates
   const x = Math.floor(xtile);
@@ -17,6 +21,15 @@ export const calculateTileCoordinates = (lat: number, lon: number, zoom: number)
   const xFraction = xtile - x;
   const yFraction = ytile - y;
   
+  // Log coordinates in development for debugging
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('Tile coordinates:', { 
+      input: { lat, lon, zoom }, 
+      valid: { validLat, validLon },
+      calculated: { xtile, ytile, x, y, xFraction, yFraction } 
+    });
+  }
+  
   return { x, y, xFraction, yFraction, xtile, ytile };
 };
 
@@ -24,14 +37,25 @@ export const calculateTileCoordinates = (lat: number, lon: number, zoom: number)
  * Get tile URL for the base map
  */
 export const getTileUrl = (x: number, y: number, zoom: number, darkTheme: boolean): string => {
+  // Ensure zoom is valid
+  const validZoom = Math.max(0, Math.min(19, zoom));
+  
   // Ensure y is within valid range (0 to 2^zoom - 1)
-  const maxTile = Math.pow(2, zoom) - 1;
-  const validY = Math.max(0, Math.min(y, maxTile));
+  const maxTile = Math.pow(2, validZoom) - 1;
+  const validY = Math.max(0, Math.min(Math.floor(y), maxTile));
   
   // Handle x wrapping around the world
-  const validX = ((x % Math.pow(2, zoom)) + Math.pow(2, zoom)) % Math.pow(2, zoom);
+  const validX = Math.floor(((x % Math.pow(2, validZoom)) + Math.pow(2, validZoom)) % Math.pow(2, validZoom));
   
-  return `/api/osm-tile?z=${zoom}&x=${validX}&y=${validY}&darkTheme=${darkTheme}`;
+  // Log tile URL in development for debugging
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('Tile URL params:', { 
+      input: { x, y, zoom }, 
+      valid: { validX, validY, validZoom } 
+    });
+  }
+  
+  return `/api/osm-tile?z=${validZoom}&x=${validX}&y=${validY}&darkTheme=${darkTheme}`;
 };
 
 /**

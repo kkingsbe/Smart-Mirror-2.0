@@ -42,6 +42,46 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
   // Calculate tile coordinates from lat/lon for the base map
   const tileCoords = calculateTileCoordinates(lat, lon, zoom);
   
+  // Add debugging for production issues
+  useEffect(() => {
+    // Log coordinates in both development and production to help debug the issue
+    console.log('NWSRadarMap initialized with:', { 
+      lat, 
+      lon, 
+      zoom, 
+      tileCoords,
+      environment: process.env.NODE_ENV,
+      windowSize: typeof window !== 'undefined' ? { 
+        width: window.innerWidth, 
+        height: window.innerHeight 
+      } : null
+    });
+    
+    // Check if we're in production and add a visible error message for debugging
+    if (process.env.NODE_ENV === 'production') {
+      const debugElement = document.createElement('div');
+      debugElement.style.position = 'fixed';
+      debugElement.style.bottom = '10px';
+      debugElement.style.right = '10px';
+      debugElement.style.backgroundColor = 'rgba(0,0,0,0.7)';
+      debugElement.style.color = 'white';
+      debugElement.style.padding = '5px';
+      debugElement.style.fontSize = '10px';
+      debugElement.style.zIndex = '9999';
+      debugElement.style.maxWidth = '300px';
+      debugElement.style.overflow = 'auto';
+      debugElement.textContent = `Map Debug: lat=${lat}, lon=${lon}, zoom=${zoom}, tileX=${tileCoords.x}, tileY=${tileCoords.y}`;
+      document.body.appendChild(debugElement);
+      
+      // Remove after 30 seconds
+      setTimeout(() => {
+        if (document.body.contains(debugElement)) {
+          document.body.removeChild(debugElement);
+        }
+      }, 30000);
+    }
+  }, [lat, lon, zoom, tileCoords]);
+  
   // Fetch radar data from our API
   const fetchRadarData = async () => {
     setIsLoading(true);

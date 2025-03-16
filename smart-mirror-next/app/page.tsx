@@ -13,7 +13,7 @@ export default function Home() {
           lon={-81.11348826187549}
           width={960}
           height={720}
-          zoom={7}
+          zoom={9}
           refreshInterval={5} // Refresh every 5 minutes
           darkTheme={true}
           frameCount={6} // 6 frames

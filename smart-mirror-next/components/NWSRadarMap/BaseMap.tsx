@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { TileCoordinates } from './types';
 import { getTileUrl } from './utils';
 
@@ -20,6 +20,13 @@ const BaseMap: React.FC<BaseMapProps> = ({
   zoom,
   darkTheme,
 }) => {
+  // Add debugging in development
+  useEffect(() => {
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('BaseMap props:', { tileCoords, width, height, zoom, darkTheme });
+    }
+  }, [tileCoords, width, height, zoom, darkTheme]);
+
   // Calculate the offset to center the map on the exact coordinates
   const tileSize = 256;
   const centerX = width / 2;
@@ -34,11 +41,14 @@ const BaseMap: React.FC<BaseMapProps> = ({
   const yOffset = centerY - centerTileY;
   
   // Calculate the range of tiles needed to cover the viewport
-  const tilesNeeded = Math.ceil(Math.max(width, height) / tileSize) + 1;
-  const halfTiles = Math.floor(tilesNeeded / 2);
+  // Add extra tiles to ensure full coverage
+  const tilesNeededX = Math.ceil(width / tileSize) + 2;
+  const tilesNeededY = Math.ceil(height / tileSize) + 2;
+  const maxTilesNeeded = Math.max(tilesNeededX, tilesNeededY);
+  const halfTiles = Math.floor(maxTilesNeeded / 2);
   
   // Generate array of tile offsets needed
-  const tileOffsets = Array.from({ length: tilesNeeded }, (_, i) => i - halfTiles);
+  const tileOffsets = Array.from({ length: maxTilesNeeded }, (_, i) => i - halfTiles);
   
   return (
     <div
@@ -64,6 +74,12 @@ const BaseMap: React.FC<BaseMapProps> = ({
           tileOffsets.map((xOffset) => {
             const tileX = Math.floor(tileCoords.xtile) + xOffset;
             const tileY = Math.floor(tileCoords.ytile) + yOffset;
+            
+            // Skip invalid tiles
+            if (tileY < 0 || tileY >= Math.pow(2, zoom)) {
+              return null;
+            }
+            
             return (
               <img 
                 key={`${tileX}-${tileY}`}
@@ -76,6 +92,14 @@ const BaseMap: React.FC<BaseMapProps> = ({
                   width: `${tileSize}px`,
                   height: `${tileSize}px`,
                   filter: darkTheme ? 'brightness(0.8) contrast(1.2)' : 'none', // Enhance dark theme
+                }}
+                onError={(e) => {
+                  // Log tile loading errors in development
+                  if (process.env.NODE_ENV !== 'production') {
+                    console.error(`Failed to load tile: ${tileX},${tileY},${zoom}`);
+                  }
+                  // Set a fallback background color for failed tiles
+                  (e.target as HTMLImageElement).style.backgroundColor = darkTheme ? '#121212' : '#f0f0f0';
                 }}
               />
             );
