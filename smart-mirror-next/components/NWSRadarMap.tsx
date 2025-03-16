@@ -1,4 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { 
+  AlertTriangle, 
+  Wind, 
+  CloudLightning, 
+  Snowflake, 
+  Droplets, 
+  AlertCircle, 
+  ThermometerSnowflake, 
+  Sun, 
+  Info
+} from 'lucide-react';
 
 interface NWSRadarMapProps {
   lat: number;
@@ -27,6 +38,23 @@ interface RadarFrame {
   opacity?: number;
 }
 
+interface WeatherAlert {
+  id: string;
+  event: string;
+  headline: string;
+  description: string;
+  severity: string;
+  urgency: string;
+  effective: string;
+  expires: string;
+  areaDesc: string;
+}
+
+// Group alerts by type for counting
+interface AlertCounts {
+  [key: string]: number;
+}
+
 /**
  * A weather radar map component that displays animated NWS radar data.
  * Uses the National Weather Service API for precipitation radar data
@@ -51,7 +79,14 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
   const [currentFrame, setCurrentFrame] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [alerts, setAlerts] = useState<WeatherAlert[]>([]);
+  const [currentAlert, setCurrentAlert] = useState<number>(0);
+  const [alertCounts, setAlertCounts] = useState<AlertCounts>({});
+  const [textScrollPosition, setTextScrollPosition] = useState<number>(0);
   const animationRef = useRef<number | null>(null);
+  const alertAnimationRef = useRef<number | null>(null);
+  const textScrollRef = useRef<number | null>(null);
+  const alertTextRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<HTMLDivElement>(null);
   
   // Calculate tile coordinates from lat/lon for the base map
@@ -106,24 +141,86 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
     }
   };
   
+  // Fetch weather alerts for the location
+  const fetchWeatherAlerts = async () => {
+    try {
+      // Fetch alerts within 20 miles of the location
+      const response = await fetch(`/api/nws-alerts?lat=${lat}&lon=${lon}&radius=20`);
+      
+      if (!response.ok) {
+        console.error(`Failed to fetch weather alerts: ${response.status}`);
+        return;
+      }
+      
+      const data = await response.json();
+      
+      if (data.alerts && Array.isArray(data.alerts)) {
+        // Sort alerts by severity (most severe first)
+        const sortedAlerts = data.alerts.sort((a: WeatherAlert, b: WeatherAlert) => {
+          const severityOrder: Record<string, number> = {
+            'Extreme': 0,
+            'Severe': 1,
+            'Moderate': 2,
+            'Minor': 3,
+            'Unknown': 4
+          };
+          
+          return (severityOrder[a.severity] || 4) - (severityOrder[b.severity] || 4);
+        });
+        
+        // Count alerts by type
+        const counts: AlertCounts = {};
+        sortedAlerts.forEach((alert: WeatherAlert) => {
+          const eventType = alert.event;
+          counts[eventType] = (counts[eventType] || 0) + 1;
+        });
+        
+        setAlertCounts(counts);
+        setAlerts(sortedAlerts);
+        setCurrentAlert(0);
+        setTextScrollPosition(0); // Reset text scroll position for new alerts
+      } else {
+        setAlerts([]);
+        setAlertCounts({});
+      }
+    } catch (error) {
+      console.error('Error fetching weather alerts:', error);
+      setAlerts([]);
+      setAlertCounts({});
+    }
+  };
+  
   // Initialize and set up refresh interval
   useEffect(() => {
     fetchRadarData();
+    fetchWeatherAlerts();
     
     // Set up refresh interval
-    const intervalId = setInterval(() => {
+    const radarIntervalId = setInterval(() => {
       fetchRadarData();
     }, refreshInterval * 60 * 1000);
     
+    // Refresh alerts every 5 minutes
+    const alertsIntervalId = setInterval(() => {
+      fetchWeatherAlerts();
+    }, 5 * 60 * 1000);
+    
     return () => {
-      clearInterval(intervalId);
+      clearInterval(radarIntervalId);
+      clearInterval(alertsIntervalId);
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
+      }
+      if (alertAnimationRef.current) {
+        cancelAnimationFrame(alertAnimationRef.current);
+      }
+      if (textScrollRef.current !== null) {
+        clearInterval(textScrollRef.current);
       }
     };
   }, [lat, lon, zoom, refreshInterval, frameCount, frameInterval, opacity]);
   
-  // Animation loop
+  // Animation loop for radar frames
   useEffect(() => {
     if (frames.length === 0) return;
     
@@ -143,6 +240,152 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
       }
     };
   }, [frames]);
+  
+  // Animation loop for alerts
+  useEffect(() => {
+    if (alerts.length === 0) return;
+    
+    const animateAlerts = () => {
+      // Change alert every 8 seconds
+      const intervalId = setInterval(() => {
+        setCurrentAlert(prev => (prev + 1) % alerts.length);
+        setTextScrollPosition(0); // Reset text scroll position when changing alerts
+      }, 8000);
+      
+      return () => clearInterval(intervalId);
+    };
+    
+    const cleanup = animateAlerts();
+    
+    return () => {
+      cleanup();
+    };
+  }, [alerts]);
+  
+  // Text scrolling effect for alert text
+  useEffect(() => {
+    if (alerts.length === 0 || !alertTextRef.current) return;
+    
+    // Clear any existing interval
+    if (textScrollRef.current !== null) {
+      clearInterval(textScrollRef.current);
+    }
+    
+    const textElement = alertTextRef.current;
+    // Reset scroll position to the beginning
+    textElement.scrollLeft = 0;
+    
+    const textWidth = textElement.scrollWidth;
+    const containerWidth = textElement.clientWidth;
+    
+    // Only scroll if text is overflowing
+    if (textWidth > containerWidth) {
+      // Start scrolling after a delay
+      setTimeout(() => {
+        // Scroll the text from left to right
+        let scrollPosition = 0;
+        
+        textScrollRef.current = window.setInterval(() => {
+          // Increment scroll position
+          scrollPosition += 1;
+          
+          // If we've reached the end, reset to beginning with a pause
+          if (scrollPosition >= textWidth - containerWidth) {
+            // Pause at the end
+            clearInterval(textScrollRef.current!);
+            setTimeout(() => {
+              // Reset to beginning
+              scrollPosition = 0;
+              textElement.scrollLeft = scrollPosition;
+              
+              // Start scrolling again after a pause
+              setTimeout(() => {
+                textScrollRef.current = window.setInterval(() => {
+                  scrollPosition += 1;
+                  textElement.scrollLeft = scrollPosition;
+                  
+                  // Loop when reaching the end again
+                  if (scrollPosition >= textWidth - containerWidth) {
+                    clearInterval(textScrollRef.current!);
+                    setTimeout(() => {
+                      scrollPosition = 0;
+                      textElement.scrollLeft = scrollPosition;
+                      
+                      // Restart the interval
+                      textScrollRef.current = window.setInterval(() => {
+                        scrollPosition += 1;
+                        textElement.scrollLeft = scrollPosition;
+                        
+                        if (scrollPosition >= textWidth - containerWidth) {
+                          // Continue the pattern for smooth looping
+                          clearInterval(textScrollRef.current!);
+                          setTimeout(() => {
+                            scrollPosition = 0;
+                            textElement.scrollLeft = scrollPosition;
+                          }, 1000);
+                        }
+                      }, 30);
+                    }, 1000);
+                  }
+                }, 30);
+              }, 1000);
+            }, 1000);
+          } else {
+            textElement.scrollLeft = scrollPosition;
+          }
+        }, 30);
+      }, 2000); // Wait 2 seconds before starting to scroll
+    }
+    
+    return () => {
+      if (textScrollRef.current !== null) {
+        clearInterval(textScrollRef.current);
+      }
+    };
+  }, [currentAlert, alerts]);
+  
+  // Get alert color based on severity
+  const getAlertColor = (severity: string): { bg: string, text: string } => {
+    switch (severity.toLowerCase()) {
+      case 'extreme':
+        return { bg: 'rgba(255, 0, 0, 0.9)', text: 'white' };
+      case 'severe':
+        return { bg: 'rgba(255, 165, 0, 0.9)', text: 'black' };
+      case 'moderate':
+        return { bg: 'rgba(255, 255, 0, 0.9)', text: 'black' };
+      case 'minor':
+        return { bg: 'rgba(0, 255, 255, 0.9)', text: 'black' };
+      default:
+        return { bg: 'rgba(255, 255, 255, 0.9)', text: 'black' };
+    }
+  };
+  
+  // Get icon for alert type
+  const getAlertIcon = (eventType: string) => {
+    const iconProps = { size: 16, strokeWidth: 2 };
+    
+    if (eventType.includes('Tornado')) {
+      return <Wind {...iconProps} />;
+    } else if (eventType.includes('Thunderstorm') || eventType.includes('Lightning')) {
+      return <CloudLightning {...iconProps} />;
+    } else if (eventType.includes('Snow') || eventType.includes('Blizzard') || eventType.includes('Winter')) {
+      return <Snowflake {...iconProps} />;
+    } else if (eventType.includes('Flood') || eventType.includes('Rain')) {
+      return <Droplets {...iconProps} />;
+    } else if (eventType.includes('Wind')) {
+      return <Wind {...iconProps} />;
+    } else if (eventType.includes('Freeze') || eventType.includes('Frost') || eventType.includes('Cold')) {
+      return <ThermometerSnowflake {...iconProps} />;
+    } else if (eventType.includes('Heat') || eventType.includes('Hot')) {
+      return <Sun {...iconProps} />;
+    } else if (eventType.includes('Warning')) {
+      return <AlertTriangle {...iconProps} />;
+    } else if (eventType.includes('Watch')) {
+      return <AlertCircle {...iconProps} />;
+    } else {
+      return <Info {...iconProps} />;
+    }
+  };
   
   // Get tile coordinates for the base map
   const tileCoords = calculateTileCoordinates();
@@ -298,6 +541,85 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
               />
             </div>
           ))}
+          
+          {/* Weather Alerts Display */}
+          {alerts.length > 0 && currentAlert < alerts.length && (
+            <div 
+              style={{
+                position: 'absolute',
+                top: 5,
+                left: 5,
+                maxWidth: '70%',
+                color: getAlertColor(alerts[currentAlert].severity).text,
+                background: getAlertColor(alerts[currentAlert].severity).bg,
+                padding: '8px 12px',
+                borderRadius: '4px',
+                fontSize: '12px',
+                zIndex: 100,
+                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.5)',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+              }}
+            >
+              {/* Alert header with icon, title and counter */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                marginBottom: '4px',
+                width: '100%',
+                justifyContent: 'space-between',
+              }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                }}>
+                  <div style={{ 
+                    marginRight: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}>
+                    {getAlertIcon(alerts[currentAlert].event)}
+                  </div>
+                  <div style={{ 
+                    fontWeight: 'bold',
+                    whiteSpace: 'nowrap',
+                  }}>
+                    {alerts[currentAlert].event}
+                  </div>
+                </div>
+                
+                <div style={{
+                  backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                  color: 'white',
+                  borderRadius: '50%',
+                  width: '20px',
+                  height: '20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '10px',
+                  fontWeight: 'bold',
+                  marginLeft: '8px',
+                  flexShrink: 0,
+                }}>
+                  {currentAlert + 1}/{alerts.length}
+                </div>
+              </div>
+              
+              {/* Alert description */}
+              <div 
+                ref={alertTextRef}
+                style={{ 
+                  overflow: 'hidden',
+                  whiteSpace: 'nowrap',
+                  scrollBehavior: 'smooth',
+                  borderTop: '1px solid rgba(255, 255, 255, 0.2)',
+                  paddingTop: '4px',
+                }}
+              >
+                {alerts[currentAlert].headline || alerts[currentAlert].description.substring(0, 100)}
+              </div>
+            </div>
+          )}
           
           {/* Location marker - always in the center of the container */}
           {showLocationMarker && (
