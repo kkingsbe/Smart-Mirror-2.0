@@ -33,7 +33,7 @@ const DateTime = () => {
 
   return (
     <div className="flex flex-col items-center p-5">
-      <div className="text-[10rem]">
+      <div className="text-[15rem]">
         <h1 className="m-0 font-['Big_Shoulders_Inline'] font-black">{time.hour}:{time.minute}</h1>
       </div>
       <div className="text-[3em] font-thin">

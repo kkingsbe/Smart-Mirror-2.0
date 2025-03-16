@@ -98,7 +98,7 @@ const WeatherAlerts: React.FC<WeatherAlertsProps> = ({
   
   // Get icon for alert type
   const getAlertIcon = (eventType: string) => {
-    const iconProps = { size: 16, strokeWidth: 2 };
+    const iconProps = { size: 48, strokeWidth: 2 };
     
     if (eventType.includes('Tornado')) {
       return <Wind {...iconProps} />;
