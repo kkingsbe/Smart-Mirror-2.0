@@ -46,10 +46,6 @@ export async function GET(request: NextRequest) {
       
       // Calculate the height of the viewport based on the Mercator projection
       // This accounts for the distortion at different latitudes
-      const latRad = lat * Math.PI / 180;
-      const metersPerDegree = 111319.9; // meters per degree at the equator
-      const metersPerPixel = 156543.03392 * Math.cos(latRad) / zoomFactor;
-      const pixelsPerDegree = metersPerDegree / metersPerPixel;
       const viewportHeight = viewportWidth * (3/4); // Assuming a 4:3 aspect ratio
       
       // Calculate the bounding box

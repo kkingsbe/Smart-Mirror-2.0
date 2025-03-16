@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { NWSRadarMapProps, RadarFrame, WeatherAlert, AlertCounts } from './types';
+import { NWSRadarMapProps, RadarFrame, WeatherAlert } from './types';
 import { calculateTileCoordinates, sortAlertsBySeverity } from './utils';
 import BaseMap from './BaseMap';
 import RadarOverlay from './RadarOverlay';
@@ -32,7 +32,6 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [alerts, setAlerts] = useState<WeatherAlert[]>([]);
   const [currentAlert, setCurrentAlert] = useState<number>(0);
-  const [alertCounts, setAlertCounts] = useState<AlertCounts>({});
   const animationRef = useRef<number | null>(null);
   const alertAnimationRef = useRef<number | null>(null);
   const mapRef = useRef<HTMLDivElement>(null);
@@ -91,24 +90,14 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
         // Sort alerts by severity (most severe first)
         const sortedAlerts = sortAlertsBySeverity(data.alerts);
         
-        // Count alerts by type
-        const counts: AlertCounts = {};
-        sortedAlerts.forEach((alert: WeatherAlert) => {
-          const eventType = alert.event;
-          counts[eventType] = (counts[eventType] || 0) + 1;
-        });
-        
-        setAlertCounts(counts);
         setAlerts(sortedAlerts);
         setCurrentAlert(0);
       } else {
         setAlerts([]);
-        setAlertCounts({});
       }
     } catch (error) {
       console.error('Error fetching weather alerts:', error);
       setAlerts([]);
-      setAlertCounts({});
     }
   };
   
@@ -279,7 +268,6 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
           <WeatherAlerts 
             alerts={alerts}
             currentAlert={currentAlert}
-            alertCounts={alertCounts}
           />
         </div>
       )}

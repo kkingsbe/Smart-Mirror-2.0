@@ -10,13 +10,12 @@ import {
   Sun, 
   Info
 } from 'lucide-react';
-import { WeatherAlert, AlertCounts } from './types';
+import { WeatherAlert } from './types';
 import { getAlertColor } from './utils';
 
 interface WeatherAlertsProps {
   alerts: WeatherAlert[];
   currentAlert: number;
-  alertCounts: AlertCounts;
 }
 
 /**
@@ -25,7 +24,6 @@ interface WeatherAlertsProps {
 const WeatherAlerts: React.FC<WeatherAlertsProps> = ({
   alerts,
   currentAlert,
-  alertCounts,
 }) => {
   const alertTextRef = useRef<HTMLDivElement>(null);
   const textScrollRef = useRef<number | null>(null);
@@ -156,10 +154,12 @@ const WeatherAlerts: React.FC<WeatherAlertsProps> = ({
           display: 'flex',
           alignItems: 'center',
         }}>
+          {getAlertIcon(alert.event)}
           <div style={{ 
             fontWeight: 'bold',
             whiteSpace: 'nowrap',
             fontSize: '2rem',
+            marginLeft: '8px'
           }}>
             {alert.event}
           </div>
