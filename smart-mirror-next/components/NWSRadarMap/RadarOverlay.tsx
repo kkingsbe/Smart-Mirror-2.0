@@ -6,6 +6,7 @@ interface RadarOverlayProps {
   currentFrame: number;
   opacity: number;
   darkTheme: boolean;
+  loadedFrames?: boolean[];
 }
 
 /**
@@ -16,6 +17,7 @@ const RadarOverlay: React.FC<RadarOverlayProps> = ({
   currentFrame,
   opacity,
   darkTheme,
+  loadedFrames = [],
 }) => {
   return (
     <>
@@ -28,7 +30,7 @@ const RadarOverlay: React.FC<RadarOverlayProps> = ({
             left: 0,
             width: '100%',
             height: '100%',
-            opacity: index === currentFrame ? opacity : 0,
+            opacity: index === currentFrame && (loadedFrames.length === 0 || loadedFrames[index]) ? opacity : 0,
             transition: 'opacity 0.2s ease-in-out',
             overflow: 'hidden',
             zIndex: 5,

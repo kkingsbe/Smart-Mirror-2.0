@@ -27,12 +27,15 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
   showLocationMarker = true, // Default to showing the location marker
 }) => {
   const [frames, setFrames] = useState<RadarFrame[]>([]);
+  const [loadedFrames, setLoadedFrames] = useState<boolean[]>([]);
   const [currentFrame, setCurrentFrame] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [alerts, setAlerts] = useState<WeatherAlert[]>([]);
   const [currentAlert, setCurrentAlert] = useState<number>(0);
+  const [allFramesLoaded, setAllFramesLoaded] = useState<boolean>(false);
   const animationRef = useRef<number | null>(null);
+  const animationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const alertAnimationRef = useRef<number | null>(null);
   const mapRef = useRef<HTMLDivElement>(null);
   
@@ -63,9 +66,14 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
       }
       
       // Set the frames (newest to oldest)
-      setFrames(data.frames.reverse());
+      const newFrames = data.frames.reverse();
+      setFrames(newFrames);
+      
+      // Initialize the loadedFrames array with false values
+      setLoadedFrames(new Array(newFrames.length).fill(false));
       setCurrentFrame(0);
-      setIsLoading(false);
+      
+      // Don't set isLoading to false yet - we'll do that when all frames are loaded
     } catch (error) {
       console.error('Error fetching radar data:', error);
       setError(error instanceof Error ? error.message : 'Failed to fetch radar data');
@@ -122,32 +130,80 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
+      if (animationTimeoutRef.current) {
+        clearTimeout(animationTimeoutRef.current);
+      }
       if (alertAnimationRef.current) {
         cancelAnimationFrame(alertAnimationRef.current);
       }
     };
   }, [lat, lon, zoom, refreshInterval, frameCount, frameInterval, opacity]);
   
-  // Animation loop for radar frames
+  // Preload all radar frame images
   useEffect(() => {
     if (frames.length === 0) return;
     
+    // Create an array to track which frames have been loaded
+    const newLoadedFrames = [...loadedFrames];
+    let loadedCount = newLoadedFrames.filter(loaded => loaded).length;
+    
+    // Preload all images
+    frames.forEach((frame, index) => {
+      if (newLoadedFrames[index]) return; // Skip already loaded frames
+      
+      const img = new Image();
+      img.onload = () => {
+        newLoadedFrames[index] = true;
+        loadedCount++;
+        setLoadedFrames([...newLoadedFrames]);
+        
+        // If all frames are loaded, set loading to false
+        if (loadedCount === frames.length) {
+          setIsLoading(false);
+          setAllFramesLoaded(true);
+        }
+      };
+      img.onerror = () => {
+        console.error(`Failed to load radar frame ${index}`);
+        // Mark as loaded anyway to prevent blocking the animation
+        newLoadedFrames[index] = true;
+        loadedCount++;
+        setLoadedFrames([...newLoadedFrames]);
+        
+        if (loadedCount === frames.length) {
+          setIsLoading(false);
+          setAllFramesLoaded(true);
+        }
+      };
+      img.src = frame.imageData;
+    });
+  }, [frames]);
+  
+  // Animation loop for radar frames - only start when all frames are loaded
+  useEffect(() => {
+    if (frames.length === 0 || !allFramesLoaded) return;
+    
     const animate = () => {
       setCurrentFrame(prev => (prev + 1) % frames.length);
-      animationRef.current = requestAnimationFrame(() => {
-        // Add a delay between frames
-        setTimeout(animate, 500); // 500ms between frames
-      });
+      
+      // Use setTimeout instead of requestAnimationFrame for more consistent timing
+      animationTimeoutRef.current = setTimeout(() => {
+        animationRef.current = requestAnimationFrame(animate);
+      }, 800); // Increased to 800ms for better performance on Raspberry Pi
     };
     
-    animate();
+    // Start animation
+    animationRef.current = requestAnimationFrame(animate);
     
     return () => {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
+      if (animationTimeoutRef.current) {
+        clearTimeout(animationTimeoutRef.current);
+      }
     };
-  }, [frames]);
+  }, [frames, allFramesLoaded]);
   
   // Animation loop for alerts
   useEffect(() => {
@@ -191,8 +247,14 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
             width: '100%',
             height: '100%',
             color: 'white',
+            flexDirection: 'column',
           }}>
-            Loading NWS radar data...
+            <div>Loading NWS radar data...</div>
+            {frames.length > 0 && (
+              <div style={{ marginTop: '10px', fontSize: '0.9rem' }}>
+                {loadedFrames.filter(Boolean).length} of {frames.length} frames loaded
+              </div>
+            )}
           </div>
         ) : error ? (
           <div style={{ 
@@ -224,6 +286,7 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
               currentFrame={currentFrame}
               opacity={opacity}
               darkTheme={darkTheme}
+              loadedFrames={loadedFrames}
             />
             
             {/* Location marker */}
