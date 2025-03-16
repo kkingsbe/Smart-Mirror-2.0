@@ -135,16 +135,12 @@ const WeatherAlerts: React.FC<WeatherAlertsProps> = ({
   return (
     <div 
       style={{
-        position: 'absolute',
-        top: 5,
-        left: 5,
-        maxWidth: '70%',
+        width: '100%',
         color: alertColor.text,
         background: alertColor.bg,
         padding: '8px 12px',
         borderRadius: '4px',
         fontSize: '12px',
-        zIndex: 100,
         boxShadow: '0 2px 4px rgba(0, 0, 0, 0.5)',
         border: '1px solid rgba(255, 255, 255, 0.2)',
       }}

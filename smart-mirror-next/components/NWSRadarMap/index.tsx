@@ -181,103 +181,109 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
   }, [alerts]);
   
   return (
-    <div 
-      ref={mapRef}
-      className={`nws-radar-map ${className}`} 
-      style={{ 
-        width, 
-        height,
-        overflow: 'hidden',
-        borderRadius: '8px',
-        backgroundColor: darkTheme ? '#121212' : 'rgba(0, 0, 0, 0.3)',
-        position: 'relative',
-      }}
-    >
-      {isLoading ? (
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'center', 
-          alignItems: 'center',
-          width: '100%',
-          height: '100%',
-          color: 'white',
-        }}>
-          Loading NWS radar data...
-        </div>
-      ) : error ? (
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'center', 
-          alignItems: 'center',
-          width: '100%',
-          height: '100%',
-          color: 'red',
-          padding: '20px',
-          textAlign: 'center',
-        }}>
-          Error: {error}
-        </div>
-      ) : (
-        <>
-          {/* Base map layer */}
-          <BaseMap 
-            tileCoords={tileCoords}
-            width={width}
-            height={height}
-            zoom={zoom}
-            darkTheme={darkTheme}
-          />
-          
-          {/* Radar frames */}
-          <RadarOverlay 
-            frames={frames}
-            currentFrame={currentFrame}
-            opacity={opacity}
-            darkTheme={darkTheme}
-          />
-          
-          {/* Weather Alerts Display */}
+    <>
+      <div 
+        ref={mapRef}
+        className={`nws-radar-map ${className}`} 
+        style={{ 
+          width, 
+          height,
+          overflow: 'hidden',
+          borderRadius: '8px',
+          backgroundColor: darkTheme ? '#121212' : 'rgba(0, 0, 0, 0.3)',
+          position: 'relative',
+        }}
+      >
+        {isLoading ? (
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'center', 
+            alignItems: 'center',
+            width: '100%',
+            height: '100%',
+            color: 'white',
+          }}>
+            Loading NWS radar data...
+          </div>
+        ) : error ? (
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'center', 
+            alignItems: 'center',
+            width: '100%',
+            height: '100%',
+            color: 'red',
+            padding: '20px',
+            textAlign: 'center',
+          }}>
+            Error: {error}
+          </div>
+        ) : (
+          <>
+            {/* Base map layer */}
+            <BaseMap 
+              tileCoords={tileCoords}
+              width={width}
+              height={height}
+              zoom={zoom}
+              darkTheme={darkTheme}
+            />
+            
+            {/* Radar frames */}
+            <RadarOverlay 
+              frames={frames}
+              currentFrame={currentFrame}
+              opacity={opacity}
+              darkTheme={darkTheme}
+            />
+            
+            {/* Location marker */}
+            {showLocationMarker && <LocationMarker />}
+            
+            {/* NWS API indicator */}
+            <div style={{
+              position: 'absolute',
+              bottom: 5,
+              left: 5,
+              fontSize: '10px',
+              color: 'white',
+              background: 'rgba(0, 0, 0, 0.7)',
+              padding: '3px 6px',
+              borderRadius: '3px',
+              zIndex: 100
+            }}>
+              NWS Radar
+            </div>
+            
+            {/* Frame interval indicator */}
+            <div style={{
+              position: 'absolute',
+              top: 5,
+              right: 5,
+              fontSize: '10px',
+              color: 'white',
+              background: 'rgba(0, 0, 0, 0.7)',
+              padding: '3px 6px',
+              borderRadius: '3px',
+              zIndex: 100
+            }}>
+              {frameInterval}min intervals
+            </div>
+          </>
+        )}
+      </div>
+      
+      {/* Weather Alerts Display - Now positioned below the radar map */}
+      {!isLoading && !error && alerts.length > 0 && (
+        <div style={{ marginTop: '10px', width }}>
           <WeatherAlerts 
             alerts={alerts}
             currentAlert={currentAlert}
             alertCounts={alertCounts}
           />
-          
-          {/* Location marker */}
-          {showLocationMarker && <LocationMarker />}
-          
-          {/* NWS API indicator */}
-          <div style={{
-            position: 'absolute',
-            bottom: 5,
-            left: 5,
-            fontSize: '10px',
-            color: 'white',
-            background: 'rgba(0, 0, 0, 0.7)',
-            padding: '3px 6px',
-            borderRadius: '3px',
-            zIndex: 100
-          }}>
-            NWS Radar
-          </div>
-          
-          {/* Frame interval indicator */}
-          <div style={{
-            position: 'absolute',
-            top: 5,
-            right: 5,
-            fontSize: '10px',
-            color: 'white',
-            background: 'rgba(0, 0, 0, 0.7)',
-            padding: '3px 6px',
-            borderRadius: '3px',
-            zIndex: 100
-          }}>
-            {frameInterval}min intervals
-          </div>
-        </>
+        </div>
       )}
-    </div>
+    </>
   );
 };
 
