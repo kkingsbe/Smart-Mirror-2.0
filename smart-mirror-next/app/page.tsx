@@ -11,8 +11,8 @@ export default function Home() {
         <NWSRadarMap 
           lat={29.26224685583715}
           lon={-81.11348826187549}
-          width={600}
-          height={500}
+          width={960}
+          height={720}
           zoom={7}
           refreshInterval={5} // Refresh every 5 minutes
           darkTheme={true}
