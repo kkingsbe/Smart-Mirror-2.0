@@ -5,7 +5,7 @@ import NWSRadarMap from '../components/NWSRadarMap';
 import DateTime from '../components/DateTime';
 export default function Home() {
   return (
-    <main style={{ backgroundColor: 'black' }} className="flex flex-col justify-center h-screen text-white">
+    <main className="flex flex-col justify-center h-screen text-white bg-black">
       <DateTime />
       <div className="flex flex-col items-center justify-center mt-auto mb-10">
         <NWSRadarMap 
