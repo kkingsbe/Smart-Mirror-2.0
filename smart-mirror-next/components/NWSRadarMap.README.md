@@ -11,6 +11,7 @@ A React component that displays animated National Weather Service (NWS) radar da
 - Animated display with customizable frame count and interval
 - Responsive design with customizable dimensions
 - Adjustable radar layer opacity for better visibility of the base map
+- Location marker to indicate the center coordinates on the map
 
 ## Usage
 
@@ -36,6 +37,7 @@ import NWSRadarMap from '../components/NWSRadarMap';
   frameCount={6} // Number of frames to display (default: 6)
   frameInterval={15} // Time between frames in minutes (default: 15)
   opacity={0.5} // Opacity of the radar layer (default: 0.5)
+  showLocationMarker={true} // Show a marker at the specified location (default: true)
 />
 ```
 
@@ -54,6 +56,7 @@ import NWSRadarMap from '../components/NWSRadarMap';
 | `frameCount` | number | 6 | Number of frames to display in the animation |
 | `frameInterval` | number | 15 | Time between frames in minutes |
 | `opacity` | number | 0.5 | Opacity of the radar layer (0.0 to 1.0) |
+| `showLocationMarker` | boolean | true | Whether to show a marker at the specified location |
 
 ## API Details
 
@@ -72,6 +75,10 @@ The radar frames are animated automatically, with each frame displayed for 500ms
 ## Radar Opacity
 
 The radar layer's opacity can be adjusted using the `opacity` prop. A lower value (closer to 0) makes the radar more transparent, allowing the base map to be more visible underneath. A higher value (closer to 1) makes the radar more opaque. The default value is 0.5 (50% opacity).
+
+## Location Marker
+
+The component can display a marker at the center of the map (the coordinates specified by `lat` and `lon`) to help users identify the exact location they're viewing. The marker includes a pulsing animation effect to make it more visible and displays the exact coordinates. This feature can be toggled using the `showLocationMarker` prop.
 
 ## Error Handling
 

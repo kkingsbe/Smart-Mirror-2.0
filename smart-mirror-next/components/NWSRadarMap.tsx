@@ -12,6 +12,7 @@ interface NWSRadarMapProps {
   frameCount?: number; // Number of frames to display
   frameInterval?: number; // Time between frames in minutes (default: 15)
   opacity?: number; // Opacity of the radar layer (0.0 to 1.0)
+  showLocationMarker?: boolean; // Whether to show a marker at the specified location
 }
 
 interface RadarFrame {
@@ -44,6 +45,7 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
   frameCount = 6, // Default to 6 frames
   frameInterval = 15, // Default to 15 minutes between frames
   opacity = 0.5, // Default to 50% opacity
+  showLocationMarker = true, // Default to showing the location marker
 }) => {
   const [frames, setFrames] = useState<RadarFrame[]>([]);
   const [currentFrame, setCurrentFrame] = useState<number>(0);
@@ -54,11 +56,20 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
   
   // Calculate tile coordinates from lat/lon for the base map
   const calculateTileCoordinates = () => {
-    // Convert lat/lon to tile coordinates
-    const x = Math.floor((lon + 180) / 360 * Math.pow(2, zoom));
-    const y = Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom));
+    // Convert lat/lon to tile coordinates at the specified zoom level
+    const n = Math.pow(2, zoom);
+    const xtile = ((lon + 180) / 360) * n;
+    const ytile = (1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * n;
     
-    return { x, y };
+    // Get the integer part of the tile coordinates
+    const x = Math.floor(xtile);
+    const y = Math.floor(ytile);
+    
+    // Calculate the precise position within the tile (0 to 1)
+    const xFraction = xtile - x;
+    const yFraction = ytile - y;
+    
+    return { x, y, xFraction, yFraction, xtile, ytile };
   };
   
   // Fetch radar data from our API
@@ -136,8 +147,42 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
   // Get tile coordinates for the base map
   const tileCoords = calculateTileCoordinates();
   
-  // Create a map background URL based on theme
-  const mapUrl = `/api/osm-tile?z=${zoom}&x=${tileCoords.x}&y=${tileCoords.y}&darkTheme=${darkTheme}`;
+  // Calculate the offset to center the map on the exact coordinates
+  // 256 is the standard tile size in pixels
+  const tileSize = 256;
+  const centerX = width / 2;
+  const centerY = height / 2;
+  
+  // Calculate the position of the center tile
+  const centerTileX = tileCoords.xtile * tileSize;
+  const centerTileY = tileCoords.ytile * tileSize;
+  
+  // Calculate the offset needed to center the exact coordinates
+  const xOffset = centerX - centerTileX;
+  const yOffset = centerY - centerTileY;
+  
+  // Determine which tiles we need to display
+  const getTileUrl = (x: number, y: number) => {
+    // Ensure y is within valid range (0 to 2^zoom - 1)
+    const maxTile = Math.pow(2, zoom) - 1;
+    const validY = Math.max(0, Math.min(y, maxTile));
+    
+    // Handle x wrapping around the world
+    const validX = ((x % Math.pow(2, zoom)) + Math.pow(2, zoom)) % Math.pow(2, zoom);
+    
+    return `/api/osm-tile?z=${zoom}&x=${validX}&y=${validY}&darkTheme=${darkTheme}`;
+  };
+  
+  // Calculate the range of tiles needed to cover the viewport
+  const tilesNeeded = Math.ceil(Math.max(width, height) / tileSize) + 1;
+  const halfTiles = Math.floor(tilesNeeded / 2);
+  
+  // Generate array of tile offsets needed
+  const tileOffsets = Array.from({ length: tilesNeeded }, (_, i) => i - halfTiles);
+  
+  // Location marker styles
+  const markerSize = 20; // Size of the marker in pixels
+  const pulseSize = 40; // Size of the pulse effect
   
   return (
     <div 
@@ -179,26 +224,53 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
       ) : (
         <>
           {/* Base map layer */}
-          <img 
-            src={mapUrl} 
-            alt="Map background"
+          <div
             style={{
               position: 'absolute',
               top: 0,
               left: 0,
               width: '100%',
               height: '100%',
-              objectFit: 'cover',
-              filter: darkTheme ? 'brightness(0.8) contrast(1.2)' : 'none', // Enhance dark theme
+              overflow: 'hidden',
             }}
-          />
+          >
+            <div
+              style={{
+                position: 'absolute',
+                width: '100%',
+                height: '100%',
+                transform: `translate(${xOffset}px, ${yOffset}px)`,
+              }}
+            >
+              {/* Grid of tiles to cover the viewport */}
+              {tileOffsets.map((yOffset) => (
+                tileOffsets.map((xOffset) => {
+                  const tileX = Math.floor(tileCoords.xtile) + xOffset;
+                  const tileY = Math.floor(tileCoords.ytile) + yOffset;
+                  return (
+                    <img 
+                      key={`${tileX}-${tileY}`}
+                      src={getTileUrl(tileX, tileY)}
+                      alt={`Map tile ${tileX},${tileY}`}
+                      style={{
+                        position: 'absolute',
+                        left: `${tileX * tileSize}px`,
+                        top: `${tileY * tileSize}px`,
+                        width: `${tileSize}px`,
+                        height: `${tileSize}px`,
+                        filter: darkTheme ? 'brightness(0.8) contrast(1.2)' : 'none', // Enhance dark theme
+                      }}
+                    />
+                  );
+                })
+              ))}
+            </div>
+          </div>
           
           {/* Radar frames */}
           {frames.map((frame, index) => (
-            <img
+            <div
               key={index}
-              src={frame.imageData}
-              alt={`Weather radar frame ${index + 1}`}
               style={{
                 position: 'absolute',
                 top: 0,
@@ -207,10 +279,81 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
                 height: '100%',
                 opacity: index === currentFrame ? opacity : 0,
                 transition: 'opacity 0.2s ease-in-out',
-                mixBlendMode: darkTheme ? 'screen' : 'normal', // Improve visibility on dark backgrounds
+                overflow: 'hidden',
+                zIndex: 5,
               }}
-            />
+            >
+              <img
+                src={frame.imageData}
+                alt={`Weather radar frame ${index + 1}`}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  mixBlendMode: darkTheme ? 'screen' : 'normal', // Improve visibility on dark backgrounds
+                }}
+              />
+            </div>
           ))}
+          
+          {/* Location marker - always in the center of the container */}
+          {showLocationMarker && (
+            <>
+              {/* Pulsing circle effect */}
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  width: `${pulseSize}px`,
+                  height: `${pulseSize}px`,
+                  borderRadius: '50%',
+                  backgroundColor: 'rgba(0, 120, 255, 0.3)',
+                  transform: 'translate(-50%, -50%)',
+                  animation: 'pulse 2s infinite',
+                  zIndex: 10,
+                }}
+              />
+              
+              {/* Marker dot */}
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  width: `${markerSize}px`,
+                  height: `${markerSize}px`,
+                  borderRadius: '50%',
+                  backgroundColor: 'rgba(0, 120, 255, 0.8)',
+                  border: '2px solid white',
+                  transform: 'translate(-50%, -50%)',
+                  zIndex: 11,
+                  boxShadow: '0 0 5px rgba(0, 0, 0, 0.5)',
+                }}
+              />
+              
+              {/* Add CSS animation for the pulse effect */}
+              <style jsx>{`
+                @keyframes pulse {
+                  0% {
+                    transform: translate(-50%, -50%) scale(0.5);
+                    opacity: 0.8;
+                  }
+                  70% {
+                    transform: translate(-50%, -50%) scale(1);
+                    opacity: 0;
+                  }
+                  100% {
+                    transform: translate(-50%, -50%) scale(0.5);
+                    opacity: 0;
+                  }
+                }
+              `}</style>
+            </>
+          )}
           
           {/* Frame timestamp indicator */}
           {frames.length > 0 && currentFrame < frames.length && (
@@ -223,6 +366,7 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
               background: 'rgba(0, 0, 0, 0.7)',
               padding: '3px 6px',
               borderRadius: '3px',
+              zIndex: 100
             }}>
               {new Date(frames[currentFrame].timestamp).toLocaleTimeString([], {
                 hour: '2-digit',
@@ -242,6 +386,7 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
             background: 'rgba(0, 0, 0, 0.7)',
             padding: '3px 6px',
             borderRadius: '3px',
+            zIndex: 100
           }}>
             NWS Radar
           </div>
@@ -256,6 +401,7 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
             background: 'rgba(0, 0, 0, 0.7)',
             padding: '3px 6px',
             borderRadius: '3px',
+            zIndex: 100
           }}>
             {frameInterval}min intervals
           </div>

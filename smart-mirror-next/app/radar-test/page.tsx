@@ -12,6 +12,7 @@ export default function RadarTestPage() {
   const [frameCount, setFrameCount] = useState(6);
   const [frameInterval, setFrameInterval] = useState(15);
   const [opacity, setOpacity] = useState(0.5); // Default to 50% opacity
+  const [showLocationMarker, setShowLocationMarker] = useState(true); // Default to showing the location marker
   
   // Handle form submission
   const handleSubmit = (e: React.FormEvent) => {
@@ -157,17 +158,32 @@ export default function RadarTestPage() {
                 />
               </div>
               
-              <div style={{ flex: '1', minWidth: '200px', display: 'flex', alignItems: 'center' }}>
-                <label style={{ marginRight: '10px' }}>Dark Theme</label>
-                <input 
-                  type="checkbox" 
-                  checked={darkTheme} 
-                  onChange={(e) => setDarkTheme(e.target.checked)}
-                  style={{ 
-                    width: '20px', 
-                    height: '20px'
-                  }}
-                />
+              <div style={{ flex: '1', minWidth: '200px', display: 'flex', alignItems: 'center', gap: '15px' }}>
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                  <label style={{ marginRight: '10px' }}>Dark Theme</label>
+                  <input 
+                    type="checkbox" 
+                    checked={darkTheme} 
+                    onChange={(e) => setDarkTheme(e.target.checked)}
+                    style={{ 
+                      width: '20px', 
+                      height: '20px'
+                    }}
+                  />
+                </div>
+                
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                  <label style={{ marginRight: '10px' }}>Show Marker</label>
+                  <input 
+                    type="checkbox" 
+                    checked={showLocationMarker} 
+                    onChange={(e) => setShowLocationMarker(e.target.checked)}
+                    style={{ 
+                      width: '20px', 
+                      height: '20px'
+                    }}
+                  />
+                </div>
               </div>
             </div>
             
@@ -260,6 +276,7 @@ export default function RadarTestPage() {
             frameCount={frameCount}
             frameInterval={frameInterval}
             opacity={opacity}
+            showLocationMarker={showLocationMarker}
           />
           
           <div style={{ marginTop: '15px', fontSize: '14px', color: '#aaa' }}>

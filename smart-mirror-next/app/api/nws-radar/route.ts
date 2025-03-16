@@ -44,9 +44,13 @@ export async function GET(request: NextRequest) {
       const zoomFactor = Math.pow(2, zoom);
       const viewportWidth = worldWidth / zoomFactor;
       
-      // Calculate the height of the viewport (approximate)
-      // This is a simplification, as the Mercator projection distorts at higher latitudes
-      const viewportHeight = viewportWidth * 0.75; // Assuming a 4:3 aspect ratio
+      // Calculate the height of the viewport based on the Mercator projection
+      // This accounts for the distortion at different latitudes
+      const latRad = lat * Math.PI / 180;
+      const metersPerDegree = 111319.9; // meters per degree at the equator
+      const metersPerPixel = 156543.03392 * Math.cos(latRad) / zoomFactor;
+      const pixelsPerDegree = metersPerDegree / metersPerPixel;
+      const viewportHeight = viewportWidth * (3/4); // Assuming a 4:3 aspect ratio
       
       // Calculate the bounding box
       const west = lon - viewportWidth / 2;

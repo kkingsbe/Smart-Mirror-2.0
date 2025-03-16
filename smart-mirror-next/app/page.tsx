@@ -39,8 +39,8 @@ export default function Home() {
             <h2>NWS Precipitation Radar</h2>
             <p>National Weather Service radar data, 15-minute intervals</p>
             <NWSRadarMap 
-              lat={29.262}
-              lon={-81.113}
+              lat={29.26224685583715}
+              lon={-81.11348826187549}
               width={600}
               height={500}
               zoom={7}
@@ -49,6 +49,7 @@ export default function Home() {
               frameCount={6} // 6 frames
               frameInterval={15} // 15-minute intervals
               opacity={0.5} // 50% opacity
+              showLocationMarker={true} // Show location marker
             />
             <div style={{ marginTop: '10px', textAlign: 'right' }}>
               <Link href="/radar-test" style={{ 
@@ -129,6 +130,7 @@ export default function Home() {
   // frameCount={6} // Number of frames to display
   // frameInterval={15} // Time between frames in minutes (default: 15)
   // opacity={0.5} // Opacity of the radar layer (default: 0.5)
+  // showLocationMarker={true} // Whether to show a marker at the specified location (default: true)
 />`}
           </pre>
           
