@@ -43,7 +43,6 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
   showLocationMarker = true, // Default to showing the location marker
   invertColors, // Allow override through props
   showFlights = true, // Default to showing flight data on the map
-  refreshInterval = 5, // in minutes, default to 5 minutes
 }) => {
   const mapRef = useRef<HTMLDivElement>(null) as React.RefObject<HTMLDivElement>;
   const [baseMapLoaded, setBaseMapLoaded] = useState<boolean>(false);
@@ -120,7 +119,6 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
   // Handle flight data
   const {
     flights,
-    isLoading: isLoadingFlights,
     error: flightError,
     setupRefreshInterval: setupFlightRefreshInterval,
   } = useFlightData({
@@ -181,7 +179,7 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
         animationTimeoutRef.current = null;
       }
     };
-  }, [frames, currentFrame, isLoading, animationPaused, baseMapLoaded, setCurrentFrame]);
+  }, [frames, currentFrame, isLoading, animationPaused, baseMapLoaded, setCurrentFrame, animationTimeoutRef]);
 
   // Add debugging for production issues
   useEffect(() => {

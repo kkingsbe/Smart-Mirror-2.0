@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 // Default radius if not specified
-const DEFAULT_RADIUS = 200; // 200nm radius
+const DEFAULT_RADIUS = 500; // 200nm radius
 
 // Aircraft interface
 interface Aircraft {
@@ -16,7 +16,7 @@ interface Aircraft {
   t?: string;
   type?: string;
   distance?: number;
-  [key: string]: any; // For other properties that might be in the API response
+  [key: string]: string | number | boolean | string[] | undefined; // For other properties that might be in the API response
 }
 
 /**
@@ -50,6 +50,8 @@ export async function GET(request: Request) {
   }
 
   try {
+    console.log(`Fetching military flights near (${lat}, ${lon}) with radius ${radius}nm`);
+    
     // Get military flights
     const militaryResponse = await fetch(
       'https://api.adsb.lol/v2/mil',
@@ -62,40 +64,119 @@ export async function GET(request: Request) {
 
     const militaryData = await militaryResponse.json();
     
-    // Filter military flights to show only those within our radius
-    // and add distance property
-    if (militaryData.ac && Array.isArray(militaryData.ac)) {
-      militaryData.ac = militaryData.ac
-        .filter((aircraft: Aircraft) => {
-          // Skip aircraft without position data
-          if (!aircraft.lat || !aircraft.lon) return false;
-          
-          // Calculate distance to our location
-          const distance = distanceInNM(
-            lat, 
-            lon, 
-            aircraft.lat, 
-            aircraft.lon
-          );
-          
-          // Only include aircraft within our radius
-          return distance <= radius;
-        })
-        .map((aircraft: Aircraft) => {
-          // Add distance property
-          if (aircraft.lat && aircraft.lon) {
-            aircraft.distance = distanceInNM(
-              lat, 
-              lon, 
-              aircraft.lat, 
-              aircraft.lon
-            );
-          }
-          return aircraft;
-        });
+    // Log the total number of military flights received
+    const totalFlights = militaryData.ac?.length || 0;
+    console.log(`Received ${totalFlights} military flights from API`);
+    
+    if (!militaryData.ac || !Array.isArray(militaryData.ac)) {
+      console.warn('No aircraft data found in API response');
+      return NextResponse.json({ 
+        ac: [], 
+        msg: 'No aircraft data found', 
+        total: 0,
+        now: Date.now() 
+      });
     }
     
-    return NextResponse.json(militaryData);
+    // Log all aircraft types for debugging
+    const allTypes = militaryData.ac
+      .map((a: Aircraft) => a.t)
+      .filter(Boolean);
+    
+    const uniqueTypes = [...new Set(allTypes)];
+    console.log(`Unique aircraft types: ${uniqueTypes.join(', ')}`);
+    
+    // Find aircraft with missing position data
+    const noPositionData = militaryData.ac.filter((aircraft: Aircraft) => 
+      !aircraft.lat || !aircraft.lon
+    );
+    
+    if (noPositionData.length > 0) {
+      console.log(`${noPositionData.length} aircraft missing position data`);
+      // Log types of aircraft missing position data
+      const typesWithoutPosition = noPositionData
+        .map((a: Aircraft) => a.t)
+        .filter(Boolean);
+      
+      if (typesWithoutPosition.length > 0) {
+        console.log(`Types missing position: ${[...new Set(typesWithoutPosition)].join(', ')}`);
+      }
+    }
+    
+    // Specifically find H60 helicopters
+    const h60Helicopters = militaryData.ac.filter((aircraft: Aircraft) => 
+      aircraft.t?.includes('H60')
+    );
+    
+    if (h60Helicopters.length > 0) {
+      console.log(`Found ${h60Helicopters.length} H60 helicopters:`);
+      // Log detailed info about each H60
+      h60Helicopters.forEach((h60: Aircraft, index: number) => {
+        console.log(`H60 #${index + 1}: hex=${h60.hex}, type=${h60.t}, lat=${h60.lat}, lon=${h60.lon}`);
+      });
+    }
+    
+    // Filter military flights to show only those within our radius
+    // and add distance property
+    const aircraftWithPosition = militaryData.ac.filter((aircraft: Aircraft) => 
+      aircraft.lat !== undefined && aircraft.lon !== undefined
+    );
+    
+    console.log(`${aircraftWithPosition.length} of ${totalFlights} aircraft have position data`);
+    
+    const inRangeAircraft = aircraftWithPosition
+      .map((aircraft: Aircraft) => {
+        // Calculate distance to our location
+        const distance = distanceInNM(
+          lat, 
+          lon, 
+          aircraft.lat!, 
+          aircraft.lon!
+        );
+        
+        // Add distance property
+        return {
+          ...aircraft,
+          distance
+        };
+      })
+      .filter((aircraft: Aircraft) => {
+        // Handle the case where distance might be undefined
+        // This should never happen in practice, but TypeScript doesn't know that
+        return typeof aircraft.distance === 'number' && aircraft.distance <= radius;
+      });
+    
+    console.log(`${inRangeAircraft.length} aircraft within ${radius}nm radius`);
+    
+    // Check for H60 helicopters in the filtered data
+    const filteredH60s = inRangeAircraft.filter((aircraft: Aircraft) => 
+      aircraft.t?.includes('H60')
+    );
+    
+    if (filteredH60s.length > 0) {
+      console.log(`${filteredH60s.length} H60 helicopters within range:`);
+      filteredH60s.forEach((h60: Aircraft, index: number) => {
+        console.log(`  H60 #${index + 1}: distance=${h60.distance?.toFixed(1)}nm, alt=${h60.alt_baro || 'unknown'}`);
+      });
+    }
+    
+    // Sort by distance for better display
+    inRangeAircraft.sort((a: Aircraft, b: Aircraft) => 
+      ((a.distance as number) || Infinity) - ((b.distance as number) || Infinity)
+    );
+    
+    // Return filtered data
+    return NextResponse.json({
+      ...militaryData,
+      ac: inRangeAircraft,
+      total: inRangeAircraft.length,
+      now: Date.now(),
+      filtered: {
+        original: totalFlights,
+        withPosition: aircraftWithPosition.length,
+        withinRadius: inRangeAircraft.length
+      }
+    });
   } catch (error) {
     console.error('Error fetching ADSB flight data:', error);
     return NextResponse.json(

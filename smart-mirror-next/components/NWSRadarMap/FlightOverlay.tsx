@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { TileCoordinates, Flight } from './types';
 import Image from 'next/image';
 
@@ -45,7 +45,7 @@ const getRotation = (track?: number): string => {
 /**
  * Get color based on altitude
  */
-const getAltitudeColor = (altitude?: number, darkTheme = true, invertColors = false): string => {
+const getAltitudeColor = (altitude?: number, invertColors = false): string => {
   // If invertColors is true, use black as base color, otherwise use white
   if (altitude === undefined) return invertColors ? '#000000' : '#ffffff';
   
@@ -67,15 +67,34 @@ const getAltitudeColor = (altitude?: number, darkTheme = true, invertColors = fa
   }
 };
 
-// Custom component for the Fighter Jet icon that can be colorized
-const FighterJetIcon = ({ 
-  rotation, 
-  invertColors 
-}: { 
-  rotation: string, 
-  invertColors: boolean 
-}) => {
-  // Use filter transforms to achieve the right coloration
+/**
+ * Determines if an aircraft is a helicopter based on its type code
+ */
+const isHelicopter = (aircraftType?: string): boolean => {
+  if (!aircraftType) return false;
+  
+  // Check for helicopter type codes
+  return (
+    aircraftType.includes('H60') || // Black Hawk
+    aircraftType.includes('EC') ||  // Eurocopter models
+    aircraftType.includes('R22') || // Robinson R22
+    aircraftType.includes('R44') || // Robinson R44
+    aircraftType.includes('R66') || // Robinson R66
+    aircraftType.includes('B06') || // Bell 206
+    aircraftType.includes('B47') || // Bell 47
+    aircraftType.includes('S70') || // Sikorsky S-70
+    aircraftType.includes('S76') || // Sikorsky S-76
+    aircraftType.startsWith('H')    // Generic helicopter indicator
+  );
+};
+
+// Fighter Jet Icon Component
+const FighterJetIcon = ({ rotation, invertColors }: { rotation: string, invertColors: boolean }) => {
+  // Use black in day mode (invertColors true), yellow in night mode (invertColors false)
+  const filterStyle = invertColors 
+    ? 'brightness(0)' // Pure black in day mode
+    : 'brightness(0) saturate(100%) invert(83%) sepia(72%) saturate(638%) hue-rotate(359deg) brightness(103%) contrast(107%)'; // Gold/yellow in night mode
+    
   return (
     <div
       style={{
@@ -83,19 +102,15 @@ const FighterJetIcon = ({
         width: '24px',
         height: '24px',
         transform: rotation,
-        // Apply different filter effects based on day/night mode
-        filter: invertColors 
-          ? 'brightness(0)' // Pure black silhouette for day mode
-          : 'brightness(0) saturate(100%) invert(83%) sepia(72%) saturate(638%) hue-rotate(359deg) brightness(103%) contrast(107%)', // Gold for night mode
       }}
     >
-      {/* Using next/image for better performance */}
       <Image
         src="/fighter-jet-silhouette.png"
         alt="Fighter jet"
         width={24}
         height={24}
         style={{
+          filter: filterStyle,
           objectFit: 'contain',
         }}
       />
@@ -112,11 +127,100 @@ const FlightOverlay: React.FC<FlightOverlayProps> = ({
   darkTheme = true,
   invertColors = false,
 }) => {
+  // Debug: Log the flights we're getting
+  useEffect(() => {
+    console.log(`FlightOverlay received ${flights.length} flights`);
+    
+    // Log all aircraft types
+    const types = flights.map(f => f.t).filter(Boolean);
+    console.log('Aircraft types:', [...new Set(types)]);
+    
+    // Check for helicopters
+    const helicopters = flights.filter(flight => isHelicopter(flight.t));
+    if (helicopters.length > 0) {
+      console.log(`Found ${helicopters.length} helicopters:`, helicopters.map(h => ({
+        type: h.t,
+        hex: h.hex,
+        lat: h.lat,
+        lon: h.lon
+      })));
+    }
+    
+    // Check if all flights have position data
+    const missingPositionData = flights.filter(f => !f.lat || !f.lon);
+    if (missingPositionData.length > 0) {
+      console.log(`${missingPositionData.length} flights missing position data`);
+    }
+  }, [flights]);
+  
   // Determine text color based on invertColors
   const textColor = invertColors ? '#000000' : '#ffffff';
   const textShadow = invertColors 
     ? '0 0 3px rgba(255, 255, 255, 0.7)' // White shadow for black text
     : '0 0 3px rgba(0, 0, 0, 0.9)';      // Black shadow for white text
+  
+  // Count displayed flights for debugging
+  let displayedFlights = 0;
+  
+  const renderedFlights = flights.map((flight) => {
+    // Check if flight has position data
+    if (!flight.lat || !flight.lon) {
+      return null;
+    }
+    
+    const { x, y } = latLonToPixel(flight.lat, flight.lon, tileCoords, zoom, mapWidth, mapHeight);
+    
+    // Check if flight is within map bounds with some padding
+    const padding = 50; // Increased padding to ensure we don't miss edge-case aircraft
+    if (x < -padding || x > mapWidth + padding || y < -padding || y > mapHeight + padding) {
+      return null;
+    }
+    
+    // Count displayed flights
+    displayedFlights++;
+    
+    const color = getAltitudeColor(flight.alt_baro, invertColors);
+    
+    return (
+      <div 
+        key={flight.hex}
+        style={{
+          position: 'absolute',
+          left: x,
+          top: y,
+          transform: `translate(-50%, -50%)`,
+          color: color,
+          fontSize: '12px',
+          textShadow: textShadow,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        {/* Fighter jet icon for all aircraft */}
+        <div style={{ marginBottom: '4px' }}>
+          <FighterJetIcon
+            rotation={getRotation(flight.track)}
+            invertColors={invertColors}
+          />
+        </div>
+        
+        {/* Flight information */}
+        <div style={{ color: textColor, fontWeight: 'bold' }}>
+          {flight.t || 'Unknown'}
+        </div>
+        <div style={{ color: textColor }}>
+          {flight.alt_baro ? `${Math.round(flight.alt_baro / 100) * 100}ft` : ''}
+        </div>
+      </div>
+    );
+  });
+  
+  // Log displayed flights count after rendering
+  useEffect(() => {
+    console.log(`Displaying ${displayedFlights}/${flights.length} flights on map`);
+  }, [displayedFlights, flights.length]);
   
   return (
     <div 
@@ -130,58 +234,7 @@ const FlightOverlay: React.FC<FlightOverlayProps> = ({
         zIndex: 20 // Above the radar overlay but below alerts
       }}
     >
-      {flights.map((flight) => {
-        if (!flight.lat || !flight.lon) return null;
-        
-        const { x, y } = latLonToPixel(flight.lat, flight.lon, tileCoords, zoom, mapWidth, mapHeight);
-        
-        // Check if flight is within map bounds with some padding
-        const padding = 20;
-        if (x < -padding || x > mapWidth + padding || y < -padding || y > mapHeight + padding) {
-          return null;
-        }
-        
-        const color = getAltitudeColor(flight.alt_baro, darkTheme, invertColors);
-        
-        return (
-          <div 
-            key={flight.hex}
-            style={{
-              position: 'absolute',
-              left: x,
-              top: y,
-              transform: `translate(-50%, -50%)`,
-              color: color,
-              fontSize: '12px',
-              textShadow: textShadow,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            {/* Fighter Jet icon */}
-            <div 
-              style={{
-                marginBottom: '4px',
-              }}
-            >
-              <FighterJetIcon
-                rotation={getRotation(flight.track)}
-                invertColors={invertColors}
-              />
-            </div>
-            
-            {/* Flight information */}
-            <div style={{ color: textColor }}>
-              {flight.t || 'Unknown'}
-            </div>
-            <div style={{ color: textColor }}>
-              {flight.alt_baro ? `${Math.round(flight.alt_baro / 100) * 100}ft` : ''}
-            </div>
-          </div>
-        );
-      })}
+      {renderedFlights}
     </div>
   );
 };
