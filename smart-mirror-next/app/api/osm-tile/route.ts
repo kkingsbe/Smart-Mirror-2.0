@@ -19,6 +19,14 @@ export async function GET(request: NextRequest) {
   const darkTheme = searchParams.get('darkTheme') === 'true';
   const mode = searchParams.get('mode') || 'single'; // 'single' or 'multiple'
   const env = searchParams.get('env'); // Environment marker
+  const timestamp = searchParams.get('t'); // Cache-busting parameter
+  
+  // Get user agent for debugging
+  const userAgent = request.headers.get('user-agent') || 'unknown';
+  const isRaspberryPi = userAgent.toLowerCase().includes('raspbian') || 
+                        userAgent.toLowerCase().includes('raspberry') ||
+                        userAgent.toLowerCase().includes('armv7') ||
+                        userAgent.toLowerCase().includes('linux armv');
   
   // Create a unique key for this request for logging purposes
   const requestKey = `${zoom},${x},${y},${darkTheme},${env}`;
@@ -32,7 +40,9 @@ export async function GET(request: NextRequest) {
       darkTheme, 
       mode,
       environment: process.env.NODE_ENV,
-      vercelEnv: process.env.VERCEL_ENV || 'not-vercel'
+      vercelEnv: process.env.VERCEL_ENV || 'not-vercel',
+      isRaspberryPi,
+      userAgent: userAgent.substring(0, 100) // Log only first 100 chars of UA
     });
     
     loggedRequests.add(requestKey);
@@ -84,23 +94,26 @@ export async function GET(request: NextRequest) {
       const serverIndex = ((xNum * 31) + yNum) % servers.length;
       const server = servers[serverIndex];
       
+      // Add a timestamp to the URL to prevent caching issues on Raspberry Pi
+      const cacheBuster = isRaspberryPi ? `?_t=${Date.now()}` : '';
+      
       if (darkTheme) {
         // Use CartoDB dark theme with specific server
-        url = `https://cartodb-basemaps-${server}.global.ssl.fastly.net/dark_all/${zoomNum}/${xNum}/${yNum}.png`;
+        url = `https://cartodb-basemaps-${server}.global.ssl.fastly.net/dark_all/${zoomNum}/${xNum}/${yNum}.png${cacheBuster}`;
       } else {
         // Use standard OpenStreetMap with specific server
-        url = `https://${server}.tile.openstreetmap.org/${zoomNum}/${xNum}/${yNum}.png`;
+        url = `https://${server}.tile.openstreetmap.org/${zoomNum}/${xNum}/${yNum}.png${cacheBuster}`;
       }
       
       // Only log new URLs to prevent excessive logging
       if (!loggedRequests.has(`url:${url}`)) {
-        console.log('Fetching OSM tile from:', { url, server, serverIndex });
+        console.log('Fetching OSM tile from:', { url, server, serverIndex, isRaspberryPi });
         loggedRequests.add(`url:${url}`);
       }
       
-      // Fetch the tile with timeout
+      // Fetch the tile with timeout - longer timeout for Raspberry Pi
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), isRaspberryPi ? 10000 : 5000); // 10 second timeout for Raspberry Pi
       
       try {
         const response = await fetch(url, {
@@ -141,7 +154,11 @@ export async function GET(request: NextRequest) {
             'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
             'Pragma': 'no-cache',
             'Expires': '0',
-            'Surrogate-Control': 'no-store'
+            'Surrogate-Control': 'no-store',
+            // Add Access-Control-Allow headers for Raspberry Pi
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET',
+            'Access-Control-Allow-Headers': 'Content-Type'
           },
         });
       } catch (fetchError: unknown) {
