@@ -21,14 +21,13 @@ export const calculateTileCoordinates = (lat: number, lon: number, zoom: number)
   const xFraction = xtile - x;
   const yFraction = ytile - y;
   
-  // Log coordinates in development for debugging
-  if (process.env.NODE_ENV !== 'production') {
-    console.log('Tile coordinates:', { 
-      input: { lat, lon, zoom }, 
-      valid: { validLat, validLon },
-      calculated: { xtile, ytile, x, y, xFraction, yFraction } 
-    });
-  }
+  // Log coordinates in both development and production
+  console.log('Tile coordinates calculation:', { 
+    input: { lat, lon, zoom }, 
+    valid: { validLat, validLon },
+    calculated: { xtile, ytile, x, y, xFraction, yFraction },
+    environment: process.env.NODE_ENV
+  });
   
   return { x, y, xFraction, yFraction, xtile, ytile };
 };
@@ -47,15 +46,17 @@ export const getTileUrl = (x: number, y: number, zoom: number, darkTheme: boolea
   // Handle x wrapping around the world
   const validX = Math.floor(((x % Math.pow(2, validZoom)) + Math.pow(2, validZoom)) % Math.pow(2, validZoom));
   
-  // Log tile URL in development for debugging
-  if (process.env.NODE_ENV !== 'production') {
-    console.log('Tile URL params:', { 
-      input: { x, y, zoom }, 
-      valid: { validX, validY, validZoom } 
-    });
-  }
+  // Add a unique identifier for each environment to prevent cross-environment caching
+  const envMarker = process.env.NODE_ENV === 'production' ? 'prod' : 'dev';
   
-  return `/api/osm-tile?z=${validZoom}&x=${validX}&y=${validY}&darkTheme=${darkTheme}`;
+  // Log tile URL parameters
+  console.log('getTileUrl:', { 
+    input: { x, y, zoom, darkTheme }, 
+    valid: { validX, validY, validZoom },
+    environment: process.env.NODE_ENV
+  });
+  
+  return `/api/osm-tile?z=${validZoom}&x=${validX}&y=${validY}&darkTheme=${darkTheme}&env=${envMarker}`;
 };
 
 /**

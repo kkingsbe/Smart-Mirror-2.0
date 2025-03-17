@@ -73,14 +73,116 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
       debugElement.textContent = `Map Debug: lat=${lat}, lon=${lon}, zoom=${zoom}, tileX=${tileCoords.x}, tileY=${tileCoords.y}`;
       document.body.appendChild(debugElement);
       
-      // Remove after 30 seconds
+      // Add a reload button for when tiles fail to load
+      const reloadButton = document.createElement('button');
+      reloadButton.textContent = 'Reload Map';
+      reloadButton.style.marginTop = '5px';
+      reloadButton.style.padding = '3px';
+      reloadButton.style.backgroundColor = '#007bff';
+      reloadButton.style.border = 'none';
+      reloadButton.style.borderRadius = '3px';
+      reloadButton.style.color = 'white';
+      reloadButton.style.cursor = 'pointer';
+      reloadButton.onclick = () => {
+        // Force reload the map by clearing cache
+        localStorage.setItem('mapReloadTimestamp', Date.now().toString());
+        window.location.reload();
+      };
+      debugElement.appendChild(document.createElement('br'));
+      debugElement.appendChild(reloadButton);
+      
+      // Remove after 5 minutes
       setTimeout(() => {
         if (document.body.contains(debugElement)) {
           document.body.removeChild(debugElement);
         }
-      }, 30000);
+      }, 300000); // 5 minutes
     }
   }, [lat, lon, zoom, tileCoords]);
+  
+  // Add a fallback mechanism for production
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'production') {
+      // Check if tiles are loading after a reasonable time
+      const checkTilesTimeout = setTimeout(() => {
+        // Get all map tile images
+        const mapTiles = document.querySelectorAll('.nws-radar-map img');
+        let loadedCount = 0;
+        
+        // Count loaded tiles
+        mapTiles.forEach(tile => {
+          if ((tile as HTMLImageElement).complete && (tile as HTMLImageElement).naturalHeight !== 0) {
+            loadedCount++;
+          }
+        });
+        
+        // If less than 25% of tiles loaded, try fallback approach
+        if (mapTiles.length > 0 && loadedCount / mapTiles.length < 0.25) {
+          console.error('Tile loading issue detected in production - trying fallback');
+          
+          // Create a fallback static map as a temporary solution
+          const fallbackMap = document.createElement('div');
+          fallbackMap.style.position = 'absolute';
+          fallbackMap.style.top = '0';
+          fallbackMap.style.left = '0';
+          fallbackMap.style.width = '100%';
+          fallbackMap.style.height = '100%';
+          fallbackMap.style.backgroundColor = '#121212';
+          fallbackMap.style.display = 'flex';
+          fallbackMap.style.flexDirection = 'column';
+          fallbackMap.style.alignItems = 'center';
+          fallbackMap.style.justifyContent = 'center';
+          fallbackMap.style.color = 'white';
+          fallbackMap.style.zIndex = '50';
+          
+          // Add a message
+          const message = document.createElement('div');
+          message.textContent = 'Map tiles failed to load. Using fallback map.';
+          message.style.marginBottom = '10px';
+          fallbackMap.appendChild(message);
+          
+          // Add a static map image from a public API as fallback
+          const staticMap = document.createElement('img');
+          staticMap.src = `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lon}&zoom=${zoom}&size=600x400&maptype=roadmap&style=element:labels|visibility:off&style=element:geometry|color:0x242f3e`;
+          staticMap.alt = 'Static fallback map';
+          staticMap.style.maxWidth = '90%';
+          staticMap.style.maxHeight = '70%';
+          staticMap.style.border = '1px solid #333';
+          staticMap.style.borderRadius = '4px';
+          fallbackMap.appendChild(staticMap);
+          
+          // Add a note about the fallback
+          const note = document.createElement('div');
+          note.textContent = 'Note: For a better fallback map, consider adding a Google Maps API key';
+          note.style.fontSize = '10px';
+          note.style.marginTop = '5px';
+          note.style.opacity = '0.7';
+          fallbackMap.appendChild(note);
+          
+          // Add a reload button
+          const reloadButton = document.createElement('button');
+          reloadButton.textContent = 'Try Again';
+          reloadButton.style.marginTop = '10px';
+          reloadButton.style.padding = '5px 10px';
+          reloadButton.style.backgroundColor = '#007bff';
+          reloadButton.style.border = 'none';
+          reloadButton.style.borderRadius = '3px';
+          reloadButton.style.color = 'white';
+          reloadButton.style.cursor = 'pointer';
+          reloadButton.onclick = () => window.location.reload();
+          fallbackMap.appendChild(reloadButton);
+          
+          // Add the fallback to the map container
+          const mapContainer = document.querySelector('.nws-radar-map');
+          if (mapContainer) {
+            mapContainer.appendChild(fallbackMap);
+          }
+        }
+      }, 10000); // Check after 10 seconds
+      
+      return () => clearTimeout(checkTilesTimeout);
+    }
+  }, [lat, lon, zoom]);
   
   // Fetch radar data from our API
   const fetchRadarData = async () => {
