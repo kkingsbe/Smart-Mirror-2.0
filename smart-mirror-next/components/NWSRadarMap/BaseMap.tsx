@@ -28,62 +28,6 @@ const BaseMap: React.FC<BaseMapProps> = ({
   const tilesInitialized = useRef(false);
   const baseMapLoaded = useRef(false);
   
-  // Add debugging in both development and production
-  useEffect(() => {
-    console.log('BaseMap props:', { 
-      tileCoords, 
-      width, 
-      height, 
-      zoom, 
-      darkTheme,
-      environment: process.env.NODE_ENV,
-      nextPublicEnv: process.env.NEXT_PUBLIC_VERCEL_ENV || 'not-vercel'
-    });
-    
-    // In production, add a debug element to show tile loading status
-    if (process.env.NODE_ENV === 'production') {
-      const debugElement = document.createElement('div');
-      debugElement.id = 'basemap-debug';
-      debugElement.style.position = 'fixed';
-      debugElement.style.top = '10px';
-      debugElement.style.left = '10px';
-      debugElement.style.backgroundColor = 'rgba(0,0,0,0.7)';
-      debugElement.style.color = 'white';
-      debugElement.style.padding = '5px';
-      debugElement.style.fontSize = '10px';
-      debugElement.style.zIndex = '9999';
-      debugElement.style.maxWidth = '300px';
-      debugElement.style.maxHeight = '200px';
-      debugElement.style.overflow = 'auto';
-      document.body.appendChild(debugElement);
-      
-      return () => {
-        if (document.body.contains(debugElement)) {
-          document.body.removeChild(debugElement);
-        }
-      };
-    }
-  }, [tileCoords, width, height, zoom, darkTheme]);
-  
-  // Update debug info when tiles load or error
-  useEffect(() => {
-    if (process.env.NODE_ENV === 'production') {
-      const debugElement = document.getElementById('basemap-debug');
-      if (debugElement) {
-        const loadedCount = Object.values(loadedTiles).filter(Boolean).length;
-        const errorCount = Object.values(tileErrors).filter(Boolean).length;
-        
-        debugElement.innerHTML = `
-          <div>Tiles: ${loadedCount} loaded, ${errorCount} errors</div>
-          <div>Center: x=${Math.floor(tileCoords.xtile)}, y=${Math.floor(tileCoords.ytile)}</div>
-          <div>Zoom: ${zoom}</div>
-          <div>First loaded: ${Object.keys(loadedTiles).slice(0, 3).join(', ')}</div>
-          <div>First errors: ${Object.keys(tileErrors).slice(0, 3).join(', ')}</div>
-        `;
-      }
-    }
-  }, [loadedTiles, tileErrors, tileCoords, zoom]);
-
   // Check if enough tiles have loaded to consider the base map ready
   useEffect(() => {
     // Consider the base map loaded when at least 50% of tiles are loaded

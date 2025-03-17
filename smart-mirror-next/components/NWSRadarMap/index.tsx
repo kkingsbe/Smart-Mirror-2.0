@@ -376,6 +376,14 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
             onLoaded={handleBaseMapLoaded}
           />
           
+          {/* Weather alerts - moved above radar */}
+          {alerts.length > 0 && (
+            <WeatherAlerts 
+              alerts={alerts} 
+              currentAlert={currentAlert}
+            />
+          )}
+          
           {/* Radar frames */}
           {baseMapLoaded && (
             <RadarOverlay 
@@ -389,14 +397,6 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
           
           {/* Location marker */}
           {showLocationMarker && baseMapLoaded && <LocationMarker />}
-          
-          {/* Weather alerts */}
-          {alerts.length > 0 && (
-            <WeatherAlerts 
-              alerts={alerts} 
-              currentAlert={currentAlert}
-            />
-          )}
         </>
       )}
     </div>
