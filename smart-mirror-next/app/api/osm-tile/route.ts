@@ -105,7 +105,7 @@ export async function GET(request: NextRequest) {
       
       if (darkTheme) {
         // Use CartoDB dark theme with specific server
-        url = `https://cartodb-basemaps-${server}.global.ssl.fastly.net/dark_all/${zoomNum}/${xNum}/${yNum}.png${cacheBuster}`;
+        url = `https://cartodb-basemaps-${server}.global.ssl.fastly.net/${invertColors ? 'light_all' : 'dark_all'}/${zoomNum}/${xNum}/${yNum}.png${cacheBuster}`;
       } else {
         // Use standard OpenStreetMap with specific server
         url = `https://${server}.tile.openstreetmap.org/${zoomNum}/${xNum}/${yNum}.png${cacheBuster}`;
@@ -164,11 +164,6 @@ export async function GET(request: NextRequest) {
             brightness: 1.0, // Keep brightness the same
             saturation: 1.1  // Slightly increase saturation
           });
-        
-        // Only invert colors if requested
-        if (invertColors) {
-          imageProcessor = imageProcessor.negate();
-        }
         
         const processedImageBuffer = await imageProcessor.toBuffer();
         

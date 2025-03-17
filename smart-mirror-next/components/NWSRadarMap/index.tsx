@@ -11,6 +11,17 @@ import { useWeatherAlerts } from './hooks/useWeatherAlerts';
 import { useVisibility } from './hooks/useVisibility';
 
 /**
+ * Determines if colors should be inverted based on time of day
+ * Returns true between 8am and 6pm, false otherwise
+ */
+const shouldInvertColors = (): boolean => {
+  const now = new Date();
+  const hour = now.getHours();
+  // Invert colors between 8am (8) and 6pm (18)
+  return hour >= 8 && hour < 18;
+};
+
+/**
  * A weather radar map component that displays animated NWS radar data.
  * Uses the National Weather Service API for precipitation radar data
  * and overlays it on an OpenStreetMap base layer.
@@ -28,11 +39,25 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
   frameInterval = 15, // Default to 15 minutes between frames
   opacity = 0.5, // Default to 50% opacity
   showLocationMarker = true, // Default to showing the location marker
-  contrast = 0.7, // Default contrast enhancement
-  invertColors = false, // Default to inverting colors
+  contrast = 1.2, // Default contrast enhancement
+  invertColors, // Allow override through props
 }) => {
   const mapRef = useRef<HTMLDivElement>(null) as React.RefObject<HTMLDivElement>;
   const [baseMapLoaded, setBaseMapLoaded] = useState<boolean>(false);
+  const [timeBasedInvertColors, setTimeBasedInvertColors] = useState<boolean>(shouldInvertColors());
+
+  // Update invertColors based on time of day
+  useEffect(() => {
+    // Initial setting
+    setTimeBasedInvertColors(shouldInvertColors());
+    
+    // Update every minute
+    const intervalId = setInterval(() => {
+      setTimeBasedInvertColors(shouldInvertColors());
+    }, 60000); // Check every minute
+    
+    return () => clearInterval(intervalId);
+  }, []);
 
   // Calculate tile coordinates from lat/lon for the base map
   const tileCoords = calculateTileCoordinates(lat, lon, zoom);
@@ -41,6 +66,9 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
   const handleBaseMapLoaded = () => {
     setBaseMapLoaded(true);
   };
+
+  // Use prop value if provided, otherwise use time-based value
+  const effectiveInvertColors = invertColors !== undefined ? invertColors : timeBasedInvertColors;
 
   // Handle visibility and animations
   const { isVisible, animationTimeoutRef } = useVisibility({
@@ -181,8 +209,8 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
             height={height}
             zoom={zoom}
             darkTheme={darkTheme}
-            contrast={contrast}
-            invertColors={invertColors}
+            contrast={effectiveInvertColors ? 1.2 : 0.8}
+            invertColors={effectiveInvertColors}
             onLoaded={handleBaseMapLoaded}
           />
           
