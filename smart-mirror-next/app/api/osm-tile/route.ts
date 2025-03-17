@@ -19,7 +19,6 @@ export async function GET(request: NextRequest) {
   const darkTheme = searchParams.get('darkTheme') === 'true';
   const mode = searchParams.get('mode') || 'single'; // 'single' or 'multiple'
   const env = searchParams.get('env'); // Environment marker
-  const timestamp = searchParams.get('t'); // Cache-busting parameter
   
   // Get user agent for debugging
   const userAgent = request.headers.get('user-agent') || 'unknown';
