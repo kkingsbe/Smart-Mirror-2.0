@@ -62,7 +62,6 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
     isLoading,
     error,
     animationPaused,
-    setAnimationPaused,
     setupRefreshInterval,
     fetchRadarData,
   } = useRadarData({
