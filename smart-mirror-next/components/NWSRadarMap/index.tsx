@@ -33,7 +33,6 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [alerts, setAlerts] = useState<WeatherAlert[]>([]);
   const [currentAlert, setCurrentAlert] = useState<number>(0);
-  const [allFramesLoaded, setAllFramesLoaded] = useState<boolean>(false);
   const [baseMapLoaded, setBaseMapLoaded] = useState<boolean>(false);
   const [animationPaused, setAnimationPaused] = useState<boolean>(false);
   const animationRef = useRef<number | null>(null);
@@ -59,7 +58,7 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
         width: window.innerWidth, 
         height: window.innerHeight 
       } : null,
-      deviceMemory: (navigator as any).deviceMemory || 'unknown',
+      deviceMemory: (navigator as { deviceMemory?: number }).deviceMemory || 'unknown',
       hardwareConcurrency: navigator.hardwareConcurrency || 'unknown'
     });
   }, [lat, lon, zoom, tileCoords]);
@@ -173,17 +172,21 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
     return () => {
       clearInterval(radarIntervalId);
       clearInterval(alertsIntervalId);
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
+      // Store refs in variables to avoid the cleanup function capturing stale refs
+      const animationRefValue = animationRef.current;
+      const alertAnimationRefValue = alertAnimationRef.current;
+      
+      if (animationRefValue) {
+        cancelAnimationFrame(animationRefValue);
       }
       if (animationTimeoutRef.current) {
         clearTimeout(animationTimeoutRef.current);
       }
-      if (alertAnimationRef.current) {
-        cancelAnimationFrame(alertAnimationRef.current);
+      if (alertAnimationRefValue) {
+        cancelAnimationFrame(alertAnimationRefValue);
       }
     };
-  }, [lat, lon, zoom, refreshInterval, frameCount, frameInterval, opacity]);
+  }, [lat, lon, zoom, refreshInterval, frameCount, frameInterval, opacity, fetchRadarData, fetchWeatherAlerts]);
   
   // Preload all radar frame images
   useEffect(() => {
@@ -207,7 +210,6 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
         
         // If all frames are loaded, set allFramesLoaded to true
         if (loadedCount === frames.length) {
-          setAllFramesLoaded(true);
           setIsLoading(false);
         }
       };
@@ -223,7 +225,6 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
         
         // If all frames are loaded, set allFramesLoaded to true
         if (loadedCount === frames.length) {
-          setAllFramesLoaded(true);
           setIsLoading(false);
         }
       };
@@ -233,7 +234,6 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
     
     // If there are no frames to load, set allFramesLoaded to true
     if (frames.length === 0) {
-      setAllFramesLoaded(true);
       setIsLoading(false);
     }
   }, [frames]);
@@ -279,7 +279,7 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
         clearTimeout(animationTimeoutRef.current);
       }
     };
-  }, [frames, currentFrame, isLoading, animationPaused, baseMapLoaded]);
+  }, [frames, currentFrame, isLoading, animationPaused, baseMapLoaded, loadedFrames]);
   
   // Animate the weather alerts
   useEffect(() => {

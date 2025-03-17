@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import Image from 'next/image';
 import { RadarFrame } from './types';
 
 interface RadarOverlayProps {
@@ -71,7 +72,7 @@ const RadarOverlay: React.FC<RadarOverlayProps> = ({
       }
       
       // Create a new image element
-      const img = new Image();
+      const img = new window.Image();
       img.src = frames[frameIndex].imageData;
       
       img.onload = () => {
@@ -115,14 +116,14 @@ const RadarOverlay: React.FC<RadarOverlayProps> = ({
     // Cleanup function
     return () => {
       // Clear image references to prevent memory leaks
-      imagesRef.current.forEach((img, i) => {
+      imagesRef.current.forEach((img) => {
         if (img) {
           img.onload = null;
           img.onerror = null;
         }
       });
     };
-  }, [frames, currentFrame, renderAttempt]);
+  }, [frames, currentFrame, renderAttempt, loadErrors, preloaded]);
   
   // Only render the current frame and the next frame to reduce DOM elements
   const visibleFrames = frames.filter((_, index) => 
@@ -158,7 +159,7 @@ const RadarOverlay: React.FC<RadarOverlayProps> = ({
             }}
           >
             {preloaded[originalIndex] && !loadErrors[originalIndex] && (
-              <img
+              <Image
                 src={frame.imageData}
                 alt={`Weather radar frame ${originalIndex + 1}`}
                 style={{
@@ -170,7 +171,9 @@ const RadarOverlay: React.FC<RadarOverlayProps> = ({
                   objectFit: 'cover',
                   mixBlendMode: darkTheme ? 'screen' : 'normal',
                 }}
-                loading="eager"
+                fill
+                priority
+                unoptimized // Use unoptimized for data URLs
                 onError={() => {
                   // Handle runtime errors
                   setLoadErrors(prev => {

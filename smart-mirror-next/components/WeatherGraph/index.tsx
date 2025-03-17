@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import Image from 'next/image';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -12,6 +13,7 @@ import {
   Legend,
   ChartOptions,
   Filler,
+  ChartData,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 
@@ -55,7 +57,7 @@ interface WeatherGraphProps {
   width?: number;
   height?: number;
   refreshInterval?: number; // in minutes
-  darkTheme?: boolean;
+  darkTheme?: boolean; // Add darkTheme property
 }
 
 const WeatherGraph: React.FC<WeatherGraphProps> = ({
@@ -64,7 +66,7 @@ const WeatherGraph: React.FC<WeatherGraphProps> = ({
   width = 800,
   height = 400,
   refreshInterval = 30, // Default refresh every 30 minutes
-  darkTheme = true,
+  darkTheme = true, // Default to dark theme
 }) => {
   const [weatherData, setWeatherData] = useState<WeatherData[]>([]);
   const [currentWeather, setCurrentWeather] = useState<CurrentWeather | null>(null);
@@ -90,7 +92,6 @@ const WeatherGraph: React.FC<WeatherGraphProps> = ({
     const range = max - min;
     const buffer = Math.max(range * 0.1, 5); // At least 5 degrees buffer
     
-    // Round to nice values for better readability
     // Round down to nearest 5 for min
     const rawMin = min - buffer;
     const adjustedMin = Math.floor(rawMin / 5) * 5;
@@ -129,7 +130,7 @@ const WeatherGraph: React.FC<WeatherGraphProps> = ({
     };
   }, [weatherData]);
 
-  const fetchWeatherData = async () => {
+  const fetchWeatherData = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch(`/api/weather-forecast?lat=${lat}&lon=${lon}`);
@@ -166,7 +167,7 @@ const WeatherGraph: React.FC<WeatherGraphProps> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [lat, lon]);
 
   useEffect(() => {
     // Fetch data initially
@@ -177,7 +178,7 @@ const WeatherGraph: React.FC<WeatherGraphProps> = ({
 
     // Clean up interval on component unmount
     return () => clearInterval(intervalId);
-  }, [lat, lon, refreshInterval]);
+  }, [refreshInterval, fetchWeatherData]);
 
   // Format time for display
   const formatTime = (timestamp: number) => {
@@ -218,14 +219,14 @@ const WeatherGraph: React.FC<WeatherGraphProps> = ({
   };
 
   // Prepare chart data
-  const chartData = {
+  const chartData: ChartData<'line'> = {
     labels: weatherData.map(data => formatTime(data.time)),
     datasets: [
       {
         label: 'Temperature (°F)',
         data: weatherData.map(data => data.temp),
         borderColor: 'rgba(255, 255, 255, 0.9)',
-        backgroundColor: function(context: any) {
+        backgroundColor: function(context: {chart: {ctx: CanvasRenderingContext2D, chartArea?: {top: number, bottom: number, left: number, right: number}}}) {
           const chart = context.chart;
           const {ctx, chartArea} = chart;
           if (!chartArea) {
@@ -264,8 +265,7 @@ const WeatherGraph: React.FC<WeatherGraphProps> = ({
             weight: 'bold',
           },
           padding: 10,
-          // Use our calculated tick values
-          callback: function(value, index, values) {
+          callback: function(value) {
             // Only show labels for our calculated tick values
             if (yAxisTicks.includes(Number(value))) {
               return value + '°';
@@ -346,10 +346,13 @@ const WeatherGraph: React.FC<WeatherGraphProps> = ({
       <div className="absolute top-0 left-0 right-0 flex justify-between px-8 py-2">
         {weatherData.map((data, index) => (
           <div key={index} className="flex flex-col items-center">
-            <img 
+            <Image 
               src={getWeatherIconUrl(data.weather.icon)} 
               alt={data.weather.description}
-              className="w-12 h-12 filter drop-shadow-glow"
+              width={48}
+              height={48}
+              className="filter drop-shadow-glow"
+              unoptimized // External images need this prop
             />
           </div>
         ))}
@@ -377,10 +380,13 @@ const WeatherGraph: React.FC<WeatherGraphProps> = ({
           </div>
         </div>
         <div className="flex items-center ml-auto">
-          <img 
+          <Image 
             src={getWeatherIconUrl(currentWeather.weather.icon)} 
             alt={currentWeather.weather.description}
-            className="w-28 h-28 filter drop-shadow-glow"
+            width={112}
+            height={112}
+            className="filter drop-shadow-glow"
+            unoptimized // External images need this prop
           />
           <div className="text-3xl font-light ml-3 text-white/90 drop-shadow-md">
             {currentWeather.weather.description}
