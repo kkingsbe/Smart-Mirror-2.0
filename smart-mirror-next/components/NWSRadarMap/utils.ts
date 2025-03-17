@@ -1,5 +1,8 @@
 import { AlertColor, TileCoordinates, WeatherAlert } from './types';
 
+// Keep track of logged tile coordinates to prevent excessive logging
+const loggedTiles = new Set<string>();
+
 /**
  * Calculate tile coordinates from lat/lon for the base map
  */
@@ -21,13 +24,17 @@ export const calculateTileCoordinates = (lat: number, lon: number, zoom: number)
   const xFraction = xtile - x;
   const yFraction = ytile - y;
   
-  // Log coordinates in both development and production
-  console.log('Tile coordinates calculation:', { 
-    input: { lat, lon, zoom }, 
-    valid: { validLat, validLon },
-    calculated: { xtile, ytile, x, y, xFraction, yFraction },
-    environment: process.env.NODE_ENV
-  });
+  // Log coordinates only once to prevent excessive logging
+  const logKey = `${lat.toFixed(4)},${lon.toFixed(4)},${zoom}`;
+  if (!loggedTiles.has(logKey)) {
+    console.log('Tile coordinates calculation:', { 
+      input: { lat, lon, zoom }, 
+      valid: { validLat, validLon },
+      calculated: { xtile, ytile, x, y, xFraction, yFraction },
+      environment: process.env.NODE_ENV
+    });
+    loggedTiles.add(logKey);
+  }
   
   return { x, y, xFraction, yFraction, xtile, ytile };
 };
@@ -49,12 +56,25 @@ export const getTileUrl = (x: number, y: number, zoom: number, darkTheme: boolea
   // Add a unique identifier for each environment to prevent cross-environment caching
   const envMarker = process.env.NODE_ENV === 'production' ? 'prod' : 'dev';
   
-  // Log tile URL parameters
-  console.log('getTileUrl:', { 
-    input: { x, y, zoom, darkTheme }, 
-    valid: { validX, validY, validZoom },
-    environment: process.env.NODE_ENV
-  });
+  // Log tile URL parameters only once per tile to prevent excessive logging
+  const logKey = `${validX},${validY},${validZoom},${darkTheme}`;
+  if (!loggedTiles.has(logKey)) {
+    console.log('getTileUrl:', { 
+      input: { x, y, zoom, darkTheme }, 
+      valid: { validX, validY, validZoom },
+      environment: process.env.NODE_ENV
+    });
+    loggedTiles.add(logKey);
+    
+    // Limit the size of the set to prevent memory leaks
+    if (loggedTiles.size > 1000) {
+      // Clear the oldest entries (first 500)
+      const entries = Array.from(loggedTiles);
+      for (let i = 0; i < 500; i++) {
+        loggedTiles.delete(entries[i]);
+      }
+    }
+  }
   
   return `/api/osm-tile?z=${validZoom}&x=${validX}&y=${validY}&darkTheme=${darkTheme}&env=${envMarker}`;
 };

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { TileCoordinates } from './types';
 import { getTileUrl } from './utils';
 
@@ -22,6 +22,8 @@ const BaseMap: React.FC<BaseMapProps> = ({
 }) => {
   const [loadedTiles, setLoadedTiles] = useState<Record<string, boolean>>({});
   const [tileErrors, setTileErrors] = useState<Record<string, boolean>>({});
+  const [tileUrls, setTileUrls] = useState<Record<string, string>>({});
+  const tilesInitialized = useRef(false);
   
   // Add debugging in both development and production
   useEffect(() => {
@@ -102,16 +104,59 @@ const BaseMap: React.FC<BaseMapProps> = ({
   // Generate array of tile offsets needed
   const tileOffsets = Array.from({ length: maxTilesNeeded }, (_, i) => i - halfTiles);
   
+  // Initialize tile URLs only once to prevent infinite re-renders
+  useEffect(() => {
+    if (!tilesInitialized.current) {
+      const newTileUrls: Record<string, string> = {};
+      
+      // Generate all tile URLs at once
+      tileOffsets.forEach(yOffset => {
+        tileOffsets.forEach(xOffset => {
+          const tileX = Math.floor(tileCoords.xtile) + xOffset;
+          const tileY = Math.floor(tileCoords.ytile) + yOffset;
+          
+          // Skip invalid tiles
+          if (tileY < 0 || tileY >= Math.pow(2, zoom)) {
+            return;
+          }
+          
+          const tileKey = `${tileX},${tileY},${zoom}`;
+          
+          // Generate URL with a timestamp that won't change during the component's lifecycle
+          const timestamp = Date.now();
+          const tileUrl = `${getTileUrl(tileX, tileY, zoom, darkTheme)}&t=${timestamp}`;
+          
+          newTileUrls[tileKey] = tileUrl;
+        });
+      });
+      
+      setTileUrls(newTileUrls);
+      tilesInitialized.current = true;
+    }
+  }, [tileCoords, zoom, darkTheme, tileOffsets]);
+  
   // Track tile load success
   const handleTileLoad = (tileKey: string) => {
-    setLoadedTiles(prev => ({...prev, [tileKey]: true}));
-    console.log(`Tile loaded: ${tileKey}`);
+    setLoadedTiles(prev => {
+      // Only update if not already loaded to prevent unnecessary re-renders
+      if (!prev[tileKey]) {
+        console.log(`Tile loaded: ${tileKey}`);
+        return {...prev, [tileKey]: true};
+      }
+      return prev;
+    });
   };
   
   // Track tile load errors
   const handleTileError = (tileKey: string, tileX: number, tileY: number, tileZoom: number) => {
-    setTileErrors(prev => ({...prev, [tileKey]: true}));
-    console.error(`Failed to load tile: ${tileKey} (${tileX},${tileY},${tileZoom})`);
+    setTileErrors(prev => {
+      // Only update if not already errored to prevent unnecessary re-renders
+      if (!prev[tileKey]) {
+        console.error(`Failed to load tile: ${tileKey} (${tileX},${tileY},${tileZoom})`);
+        return {...prev, [tileKey]: true};
+      }
+      return prev;
+    });
   };
   
   return (
@@ -145,10 +190,13 @@ const BaseMap: React.FC<BaseMapProps> = ({
               return null;
             }
             
-            // Get the tile URL with a cache-busting parameter for production
-            const tileUrl = process.env.NODE_ENV === 'production' 
-              ? `${getTileUrl(tileX, tileY, zoom, darkTheme)}&t=${Date.now()}` 
-              : getTileUrl(tileX, tileY, zoom, darkTheme);
+            // Use pre-generated URL from state to prevent infinite re-renders
+            const tileUrl = tileUrls[tileKey];
+            
+            // Skip rendering if URL isn't ready yet
+            if (!tileUrl) {
+              return null;
+            }
             
             return (
               <img 

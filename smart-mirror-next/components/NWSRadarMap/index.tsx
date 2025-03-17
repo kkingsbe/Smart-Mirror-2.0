@@ -103,6 +103,10 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
   // Add a fallback mechanism for production
   useEffect(() => {
     if (process.env.NODE_ENV === 'production') {
+      // Store a reference to the fallback element to avoid creating multiple
+      let fallbackMap: HTMLDivElement | null = null;
+      let fallbackCreated = false;
+      
       // Check if tiles are loading after a reasonable time
       const checkTilesTimeout = setTimeout(() => {
         // Get all map tile images
@@ -116,71 +120,183 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
           }
         });
         
-        // If less than 25% of tiles loaded, try fallback approach
-        if (mapTiles.length > 0 && loadedCount / mapTiles.length < 0.25) {
+        console.log(`Tile loading check: ${loadedCount} of ${mapTiles.length} tiles loaded`);
+        
+        // If less than 25% of tiles loaded and we have at least some tiles to check, try fallback approach
+        if (mapTiles.length > 5 && loadedCount / mapTiles.length < 0.25) {
           console.error('Tile loading issue detected in production - trying fallback');
           
-          // Create a fallback static map as a temporary solution
-          const fallbackMap = document.createElement('div');
-          fallbackMap.style.position = 'absolute';
-          fallbackMap.style.top = '0';
-          fallbackMap.style.left = '0';
-          fallbackMap.style.width = '100%';
-          fallbackMap.style.height = '100%';
-          fallbackMap.style.backgroundColor = '#121212';
-          fallbackMap.style.display = 'flex';
-          fallbackMap.style.flexDirection = 'column';
-          fallbackMap.style.alignItems = 'center';
-          fallbackMap.style.justifyContent = 'center';
-          fallbackMap.style.color = 'white';
-          fallbackMap.style.zIndex = '50';
+          // Only create fallback if it doesn't already exist
+          if (!fallbackCreated) {
+            fallbackCreated = true;
+            
+            // Create a fallback static map as a temporary solution
+            fallbackMap = document.createElement('div');
+            fallbackMap.id = 'radar-fallback-map';
+            fallbackMap.style.position = 'absolute';
+            fallbackMap.style.top = '0';
+            fallbackMap.style.left = '0';
+            fallbackMap.style.width = '100%';
+            fallbackMap.style.height = '100%';
+            fallbackMap.style.backgroundColor = '#121212';
+            fallbackMap.style.display = 'flex';
+            fallbackMap.style.flexDirection = 'column';
+            fallbackMap.style.alignItems = 'center';
+            fallbackMap.style.justifyContent = 'center';
+            fallbackMap.style.color = 'white';
+            fallbackMap.style.zIndex = '50';
+            
+            // Add a message
+            const message = document.createElement('div');
+            message.textContent = 'Map tiles failed to load. Using fallback map.';
+            message.style.marginBottom = '10px';
+            fallbackMap.appendChild(message);
+            
+            // Add a static map image from a public API as fallback
+            const staticMap = document.createElement('img');
+            staticMap.src = `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lon}&zoom=${zoom}&size=600x400&maptype=roadmap&style=element:labels|visibility:off&style=element:geometry|color:0x242f3e`;
+            staticMap.alt = 'Static fallback map';
+            staticMap.style.maxWidth = '90%';
+            staticMap.style.maxHeight = '70%';
+            staticMap.style.border = '1px solid #333';
+            staticMap.style.borderRadius = '4px';
+            fallbackMap.appendChild(staticMap);
+            
+            // Add a note about the fallback
+            const note = document.createElement('div');
+            note.textContent = 'Note: For a better fallback map, consider adding a Google Maps API key';
+            note.style.fontSize = '10px';
+            note.style.marginTop = '5px';
+            note.style.opacity = '0.7';
+            fallbackMap.appendChild(note);
+            
+            // Add a reload button
+            const reloadButton = document.createElement('button');
+            reloadButton.textContent = 'Try Again';
+            reloadButton.style.marginTop = '10px';
+            reloadButton.style.padding = '5px 10px';
+            reloadButton.style.backgroundColor = '#007bff';
+            reloadButton.style.border = 'none';
+            reloadButton.style.borderRadius = '3px';
+            reloadButton.style.color = 'white';
+            reloadButton.style.cursor = 'pointer';
+            reloadButton.onclick = () => {
+              // Clear any cached data
+              localStorage.setItem('mapReloadTimestamp', Date.now().toString());
+              window.location.reload();
+            };
+            fallbackMap.appendChild(reloadButton);
+            
+            // Add the fallback to the map container
+            const mapContainer = document.querySelector('.nws-radar-map');
+            if (mapContainer) {
+              mapContainer.appendChild(fallbackMap);
+            }
+          }
+        } else if (fallbackMap && loadedCount / mapTiles.length >= 0.5) {
+          // If we now have enough tiles loaded, remove the fallback
+          if (fallbackMap.parentNode) {
+            fallbackMap.parentNode.removeChild(fallbackMap);
+          }
+          fallbackCreated = false;
+        }
+      }, 15000); // Check after 15 seconds to give more time for tiles to load
+      
+      // Do a second check after 30 seconds in case the first check was too early
+      const secondCheckTimeout = setTimeout(() => {
+        // Only run if we haven't already created a fallback
+        if (!fallbackCreated) {
+          const mapTiles = document.querySelectorAll('.nws-radar-map img');
+          let loadedCount = 0;
           
-          // Add a message
-          const message = document.createElement('div');
-          message.textContent = 'Map tiles failed to load. Using fallback map.';
-          message.style.marginBottom = '10px';
-          fallbackMap.appendChild(message);
+          mapTiles.forEach(tile => {
+            if ((tile as HTMLImageElement).complete && (tile as HTMLImageElement).naturalHeight !== 0) {
+              loadedCount++;
+            }
+          });
           
-          // Add a static map image from a public API as fallback
-          const staticMap = document.createElement('img');
-          staticMap.src = `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lon}&zoom=${zoom}&size=600x400&maptype=roadmap&style=element:labels|visibility:off&style=element:geometry|color:0x242f3e`;
-          staticMap.alt = 'Static fallback map';
-          staticMap.style.maxWidth = '90%';
-          staticMap.style.maxHeight = '70%';
-          staticMap.style.border = '1px solid #333';
-          staticMap.style.borderRadius = '4px';
-          fallbackMap.appendChild(staticMap);
+          console.log(`Second tile loading check: ${loadedCount} of ${mapTiles.length} tiles loaded`);
           
-          // Add a note about the fallback
-          const note = document.createElement('div');
-          note.textContent = 'Note: For a better fallback map, consider adding a Google Maps API key';
-          note.style.fontSize = '10px';
-          note.style.marginTop = '5px';
-          note.style.opacity = '0.7';
-          fallbackMap.appendChild(note);
-          
-          // Add a reload button
-          const reloadButton = document.createElement('button');
-          reloadButton.textContent = 'Try Again';
-          reloadButton.style.marginTop = '10px';
-          reloadButton.style.padding = '5px 10px';
-          reloadButton.style.backgroundColor = '#007bff';
-          reloadButton.style.border = 'none';
-          reloadButton.style.borderRadius = '3px';
-          reloadButton.style.color = 'white';
-          reloadButton.style.cursor = 'pointer';
-          reloadButton.onclick = () => window.location.reload();
-          fallbackMap.appendChild(reloadButton);
-          
-          // Add the fallback to the map container
-          const mapContainer = document.querySelector('.nws-radar-map');
-          if (mapContainer) {
-            mapContainer.appendChild(fallbackMap);
+          // If still less than 50% of tiles loaded, show fallback
+          if (mapTiles.length > 5 && loadedCount / mapTiles.length < 0.5) {
+            console.error('Tile loading still problematic after 30 seconds - showing fallback');
+            
+            // Create fallback (same code as above)
+            fallbackCreated = true;
+            
+            // Create a fallback static map as a temporary solution
+            fallbackMap = document.createElement('div');
+            fallbackMap.id = 'radar-fallback-map';
+            fallbackMap.style.position = 'absolute';
+            fallbackMap.style.top = '0';
+            fallbackMap.style.left = '0';
+            fallbackMap.style.width = '100%';
+            fallbackMap.style.height = '100%';
+            fallbackMap.style.backgroundColor = '#121212';
+            fallbackMap.style.display = 'flex';
+            fallbackMap.style.flexDirection = 'column';
+            fallbackMap.style.alignItems = 'center';
+            fallbackMap.style.justifyContent = 'center';
+            fallbackMap.style.color = 'white';
+            fallbackMap.style.zIndex = '50';
+            
+            // Add a message
+            const message = document.createElement('div');
+            message.textContent = 'Map tiles failed to load. Using fallback map.';
+            message.style.marginBottom = '10px';
+            fallbackMap.appendChild(message);
+            
+            // Add a static map image from a public API as fallback
+            const staticMap = document.createElement('img');
+            staticMap.src = `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lon}&zoom=${zoom}&size=600x400&maptype=roadmap&style=element:labels|visibility:off&style=element:geometry|color:0x242f3e`;
+            staticMap.alt = 'Static fallback map';
+            staticMap.style.maxWidth = '90%';
+            staticMap.style.maxHeight = '70%';
+            staticMap.style.border = '1px solid #333';
+            staticMap.style.borderRadius = '4px';
+            fallbackMap.appendChild(staticMap);
+            
+            // Add a note about the fallback
+            const note = document.createElement('div');
+            note.textContent = 'Note: For a better fallback map, consider adding a Google Maps API key';
+            note.style.fontSize = '10px';
+            note.style.marginTop = '5px';
+            note.style.opacity = '0.7';
+            fallbackMap.appendChild(note);
+            
+            // Add a reload button
+            const reloadButton = document.createElement('button');
+            reloadButton.textContent = 'Try Again';
+            reloadButton.style.marginTop = '10px';
+            reloadButton.style.padding = '5px 10px';
+            reloadButton.style.backgroundColor = '#007bff';
+            reloadButton.style.border = 'none';
+            reloadButton.style.borderRadius = '3px';
+            reloadButton.style.color = 'white';
+            reloadButton.style.cursor = 'pointer';
+            reloadButton.onclick = () => {
+              // Clear any cached data
+              localStorage.setItem('mapReloadTimestamp', Date.now().toString());
+              window.location.reload();
+            };
+            fallbackMap.appendChild(reloadButton);
+            
+            // Add the fallback to the map container
+            const mapContainer = document.querySelector('.nws-radar-map');
+            if (mapContainer) {
+              mapContainer.appendChild(fallbackMap);
+            }
           }
         }
-      }, 10000); // Check after 10 seconds
+      }, 30000);
       
-      return () => clearTimeout(checkTilesTimeout);
+      return () => {
+        clearTimeout(checkTilesTimeout);
+        clearTimeout(secondCheckTimeout);
+        if (fallbackMap && fallbackMap.parentNode) {
+          fallbackMap.parentNode.removeChild(fallbackMap);
+        }
+      };
     }
   }, [lat, lon, zoom]);
   

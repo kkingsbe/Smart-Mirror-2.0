@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// Keep track of logged requests to prevent excessive logging
+const loggedRequests = new Set<string>();
+
 /**
  * API route to fetch OpenStreetMap tiles
  * 
@@ -15,19 +18,34 @@ export async function GET(request: NextRequest) {
   const y = searchParams.get('y');
   const darkTheme = searchParams.get('darkTheme') === 'true';
   const mode = searchParams.get('mode') || 'single'; // 'single' or 'multiple'
-  const timestamp = searchParams.get('t'); // Cache-busting parameter
+  const env = searchParams.get('env'); // Environment marker
   
-  // Log request in both development and production
-  console.log('OSM tile request:', { 
-    zoom, 
-    x, 
-    y, 
-    darkTheme, 
-    mode,
-    environment: process.env.NODE_ENV,
-    vercelEnv: process.env.VERCEL_ENV || 'not-vercel',
-    url: request.url
-  });
+  // Create a unique key for this request for logging purposes
+  const requestKey = `${zoom},${x},${y},${darkTheme},${env}`;
+  
+  // Log request only once per unique tile to prevent excessive logging
+  if (!loggedRequests.has(requestKey)) {
+    console.log('OSM tile request:', { 
+      zoom, 
+      x, 
+      y, 
+      darkTheme, 
+      mode,
+      environment: process.env.NODE_ENV,
+      vercelEnv: process.env.VERCEL_ENV || 'not-vercel'
+    });
+    
+    loggedRequests.add(requestKey);
+    
+    // Limit the size of the set to prevent memory leaks
+    if (loggedRequests.size > 1000) {
+      // Clear the oldest entries (first 500)
+      const entries = Array.from(loggedRequests);
+      for (let i = 0; i < 500; i++) {
+        loggedRequests.delete(entries[i]);
+      }
+    }
+  }
   
   if (!zoom || !x || !y) {
     console.error('Missing required parameters:', { zoom, x, y });
@@ -62,11 +80,8 @@ export async function GET(request: NextRequest) {
         : ['a', 'b', 'c'];     // OSM has multiple subdomains
       
       // Select a server based on the tile coordinates for better distribution
-      // or use the timestamp if available for cache busting
-      const serverIndex = timestamp 
-        ? parseInt(timestamp.slice(-5)) % servers.length
-        : (xNum + yNum) % servers.length;
-      
+      // Use a deterministic approach based on the tile coordinates
+      const serverIndex = ((xNum * 31) + yNum) % servers.length;
       const server = servers[serverIndex];
       
       if (darkTheme) {
@@ -77,8 +92,11 @@ export async function GET(request: NextRequest) {
         url = `https://${server}.tile.openstreetmap.org/${zoomNum}/${xNum}/${yNum}.png`;
       }
       
-      // Log the URL
-      console.log('Fetching OSM tile from:', { url, server, serverIndex });
+      // Only log new URLs to prevent excessive logging
+      if (!loggedRequests.has(`url:${url}`)) {
+        console.log('Fetching OSM tile from:', { url, server, serverIndex });
+        loggedRequests.add(`url:${url}`);
+      }
       
       // Fetch the tile with timeout
       const controller = new AbortController();
@@ -94,8 +112,8 @@ export async function GET(request: NextRequest) {
             'Pragma': 'no-cache'
           },
           signal: controller.signal,
-          // Disable cache in production to troubleshoot
-          cache: process.env.NODE_ENV === 'production' ? 'no-store' : 'default'
+          // Use default caching in production now that we've fixed the issues
+          cache: 'default'
         });
         
         clearTimeout(timeoutId);
@@ -118,11 +136,9 @@ export async function GET(request: NextRequest) {
         return new NextResponse(imageBuffer, {
           headers: {
             'Content-Type': 'image/png',
-            'Cache-Control': process.env.NODE_ENV === 'production' 
-              ? 'no-cache, no-store, must-revalidate' // Disable caching in production for debugging
-              : 'public, max-age=86400', // Cache for 24 hours in development
-            'Pragma': 'no-cache',
-            'Expires': '0'
+            // Use normal caching now that we've fixed the issues
+            'Cache-Control': 'public, max-age=86400', // Cache for 24 hours
+            'Vary': 'Accept-Encoding'
           },
         });
       } catch (fetchError: unknown) {
