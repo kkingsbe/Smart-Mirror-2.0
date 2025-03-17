@@ -5,18 +5,25 @@ const loggedTiles = new Set<string>();
 
 /**
  * Calculate tile coordinates from lat/lon for the base map
+ * Using the standard OSM Web Mercator projection formula
  */
 export const calculateTileCoordinates = (lat: number, lon: number, zoom: number): TileCoordinates => {
-  // Ensure lat and lon are valid numbers
-  const validLat = Number.isFinite(lat) ? Math.max(-85.05112878, Math.min(85.05112878, lat)) : 0;
-  const validLon = Number.isFinite(lon) ? ((lon + 540) % 360) - 180 : 0;
+  // Use the exact same mercator projection as the pixel calculation
+  const latLimitDegrees = 85.0511287798;
+  const validLat = Math.max(Math.min(latLimitDegrees, lat), -latLimitDegrees);
+  const validLon = lon;
   
-  // Convert lat/lon to tile coordinates at the specified zoom level
-  const n = Math.pow(2, zoom);
-  const xtile = ((validLon + 180) / 360) * n;
-  const ytile = (1 - Math.log(Math.tan(validLat * Math.PI / 180) + 1 / Math.cos(validLat * Math.PI / 180)) / Math.PI) / 2 * n;
+  // First, project to Mercator coordinates (in [0,1] space at zoom 0)
+  const latRad = validLat * Math.PI / 180;
+  const mercatorX = (validLon + 180) / 360;
+  const mercatorY = (1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2;
   
-  // Get the integer part of the tile coordinates
+  // Convert to tile coordinates at the specified zoom level
+  const scale = Math.pow(2, zoom);
+  const xtile = mercatorX * scale;
+  const ytile = mercatorY * scale;
+  
+  // Get the integer part of the tile coordinates (floor for proper tile addressing)
   const x = Math.floor(xtile);
   const y = Math.floor(ytile);
   
@@ -25,13 +32,13 @@ export const calculateTileCoordinates = (lat: number, lon: number, zoom: number)
   const yFraction = ytile - y;
   
   // Log coordinates only once to prevent excessive logging
-  const logKey = `${lat.toFixed(4)},${lon.toFixed(4)},${zoom}`;
+  const logKey = `tile_${lat.toFixed(4)},${lon.toFixed(4)},${zoom}`;
   if (!loggedTiles.has(logKey)) {
     console.log('Tile coordinates calculation:', { 
       input: { lat, lon, zoom }, 
-      valid: { validLat, validLon },
-      calculated: { xtile, ytile, x, y, xFraction, yFraction },
-      environment: process.env.NODE_ENV
+      mercator: { x: mercatorX, y: mercatorY },
+      tileCoords: { xtile, ytile },
+      result: { x, y, xFraction, yFraction }
     });
     loggedTiles.add(logKey);
   }
@@ -58,7 +65,9 @@ export const getTileUrl = (
   const validY = Math.max(0, Math.min(Math.floor(y), maxTile));
   
   // Handle x wrapping around the world
-  const validX = Math.floor(((x % Math.pow(2, validZoom)) + Math.pow(2, validZoom)) % Math.pow(2, validZoom));
+  // The previous normalization was potentially causing discrepancies with coordinate calculations
+  // Using the standard OSM approach for x coordination wrapping
+  const validX = Math.floor(x) % Math.pow(2, validZoom);
   
   // Add a unique identifier for each environment to prevent cross-environment caching
   const envMarker = process.env.NODE_ENV === 'production' ? 'prod' : 'dev';
@@ -119,4 +128,60 @@ export const sortAlertsBySeverity = (alerts: WeatherAlert[]): WeatherAlert[] => 
     
     return (severityOrder[a.severity] || 4) - (severityOrder[b.severity] || 4);
   });
+};
+
+/**
+ * Calculates pixel coordinates for a lat,lon point using the official OSM method
+ * 
+ * This function exactly mirrors how OpenLayers/Leaflet would calculate positions
+ */
+export const calculatePixelCoordinates = (lat: number, lon: number, tileCoords: TileCoordinates, zoom: number, width: number, height: number): { x: number, y: number } => {
+  // Constants
+  const TILE_SIZE = 256;
+  
+  // Mercator math is very sensitive to precision - use full precision
+  // Convert latlng to absolute pixel coordinates in the global pixel space
+  
+  // First, project to Mercator coordinates (in [0,1] space at zoom 0)
+  const latLimitDegrees = 85.0511287798;
+  const validLat = Math.max(Math.min(latLimitDegrees, lat), -latLimitDegrees);
+  const validLon = lon;
+  
+  const latRad = validLat * Math.PI / 180;
+  const mercatorX = (validLon + 180) / 360;
+  const mercatorY = (1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2;
+  
+  // Convert to the global pixel coordinates at current zoom
+  const scale = Math.pow(2, zoom);
+  const worldPixelX = mercatorX * scale * TILE_SIZE;
+  const worldPixelY = mercatorY * scale * TILE_SIZE;
+  
+  // Get the pixel coordinates of the center of the map
+  const centerPixelX = (tileCoords.xtile + tileCoords.xFraction) * TILE_SIZE;
+  const centerPixelY = (tileCoords.ytile + tileCoords.yFraction) * TILE_SIZE;
+  
+  // Calculate the viewport pixel coordinates relative to the center
+  // Add width/2 and height/2 to center the offset in the viewport
+  const viewportX = Math.round(worldPixelX - centerPixelX + width / 2);
+  const viewportY = Math.round(worldPixelY - centerPixelY + height / 2);
+  
+  // Debug logging to understand the calculations
+  const logKey = `osm_${lat.toFixed(4)},${lon.toFixed(4)},${zoom}`;
+  if (!loggedTiles.has(logKey)) {
+    console.log('OSM Pixel calculation:', {
+      input: { lat, lon, zoom, width, height },
+      mercator: { x: mercatorX, y: mercatorY },
+      worldPixel: { x: worldPixelX, y: worldPixelY },
+      centerPixel: { x: centerPixelX, y: centerPixelY },
+      viewport: { x: viewportX, y: viewportY },
+      offset: { 
+        x: worldPixelX - centerPixelX,
+        y: worldPixelY - centerPixelY
+      },
+      tileCoords
+    });
+    loggedTiles.add(logKey);
+  }
+  
+  return { x: viewportX, y: viewportY };
 }; 

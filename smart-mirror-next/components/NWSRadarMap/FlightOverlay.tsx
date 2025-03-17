@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { TileCoordinates, Flight } from './types';
 import Image from 'next/image';
+import { calculatePixelCoordinates } from './utils';
 
 interface FlightOverlayProps {
   flights: Flight[];
@@ -10,29 +11,9 @@ interface FlightOverlayProps {
   zoom: number;
   darkTheme?: boolean;
   invertColors?: boolean;
+  // Optional offset correction in case the standard calculation needs adjustment
+  offsetCorrection?: { x: number, y: number };
 }
-
-/**
- * Converts latitude and longitude to pixel coordinates on the map
- */
-const latLonToPixel = (lat: number, lon: number, tileCoords: TileCoordinates, zoom: number, width: number, height: number): { x: number, y: number } => {
-  // Tile size is 256x256 pixels
-  const tileSize = 256;
-  
-  // Calculate the global pixel coordinates
-  const worldX = ((lon + 180) / 360) * Math.pow(2, zoom + 8);
-  const worldY = (0.5 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / (2 * Math.PI)) * Math.pow(2, zoom + 8);
-  
-  // Calculate the reference pixel (center of map)
-  const centerX = tileCoords.xtile * tileSize + tileCoords.xFraction * tileSize;
-  const centerY = tileCoords.ytile * tileSize + tileCoords.yFraction * tileSize;
-  
-  // Calculate the relative pixel position on our canvas
-  const x = worldX - centerX + width / 2;
-  const y = worldY - centerY + height / 2;
-  
-  return { x, y };
-};
 
 /**
  * Converts the track angle (0-360) to a rotation transform
@@ -89,7 +70,7 @@ const isHelicopter = (aircraftType?: string): boolean => {
 };
 
 // Fighter Jet Icon Component
-const FighterJetIcon = ({ rotation, invertColors }: { rotation: string, invertColors: boolean }) => {
+const FighterJetIcon = ({ rotation, invertColors, size }: { rotation: string, invertColors: boolean, size: number }) => {
   // Use black in day mode (invertColors true), yellow in night mode (invertColors false)
   const filterStyle = invertColors 
     ? 'brightness(0)' // Pure black in day mode
@@ -99,16 +80,16 @@ const FighterJetIcon = ({ rotation, invertColors }: { rotation: string, invertCo
     <div
       style={{
         position: 'relative',
-        width: '24px',
-        height: '24px',
+        width: `${size}px`,
+        height: `${size}px`,
         transform: rotation,
       }}
     >
       <Image
         src="/fighter-jet-silhouette.png"
         alt="Fighter jet"
-        width={24}
-        height={24}
+        width={size}
+        height={size}
         style={{
           filter: filterStyle,
           objectFit: 'contain',
@@ -126,6 +107,7 @@ const FlightOverlay: React.FC<FlightOverlayProps> = ({
   zoom,
   darkTheme = true,
   invertColors = false,
+  offsetCorrection,
 }) => {
   // Debug: Log the flights we're getting
   useEffect(() => {
@@ -153,6 +135,48 @@ const FlightOverlay: React.FC<FlightOverlayProps> = ({
     }
   }, [flights]);
   
+  // Debug logging
+  useEffect(() => {
+    console.log('Tile coordinates:', tileCoords);
+    console.log('Map dimensions:', { mapWidth, mapHeight, zoom });
+    
+    if (flights.length > 0 && flights[0].lat !== undefined && flights[0].lon !== undefined) {
+      // Get a few sample flights for debugging
+      const sampleFlights = flights.slice(0, 3).filter(f => f.lat && f.lon);
+      
+      sampleFlights.forEach(flight => {
+        // Calculate position using OSM calculation
+        const pos = calculatePixelCoordinates(
+          flight.lat!, 
+          flight.lon!, 
+          tileCoords, 
+          zoom, 
+          mapWidth, 
+          mapHeight
+        );
+        
+        // For comparison, calculate what would be the direct conversion
+        const scaleFactor = Math.pow(2, zoom);
+        const pointTileX = ((flight.lon! + 180) / 360) * scaleFactor;
+        const latRad = flight.lat! * Math.PI / 180;
+        const pointTileY = (1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) * scaleFactor / 2;
+        
+        // Print calculated position and the formula used
+        console.log(`Aircraft ${flight.hex}:`, {
+          aircraft: flight.t || 'unknown',
+          lat: flight.lat,
+          lon: flight.lon,
+          calculatedPosition: pos,
+          formula: {
+            tileX: pointTileX,
+            tileY: pointTileY,
+            formula: "Standard OSM formula"
+          }
+        });
+      });
+    }
+  }, [tileCoords, mapWidth, mapHeight, zoom, flights]);
+  
   // Determine text color based on invertColors
   const textColor = invertColors ? '#000000' : '#ffffff';
   const textShadow = invertColors 
@@ -163,18 +187,26 @@ const FlightOverlay: React.FC<FlightOverlayProps> = ({
   let displayedFlights = 0;
   
   const renderedFlights = flights.map((flight) => {
-    // Check if flight has position data
-    if (!flight.lat || !flight.lon) {
-      return null;
-    }
-    
-    const { x, y } = latLonToPixel(flight.lat, flight.lon, tileCoords, zoom, mapWidth, mapHeight);
-    
-    // Check if flight is within map bounds with some padding
-    const padding = 50; // Increased padding to ensure we don't miss edge-case aircraft
-    if (x < -padding || x > mapWidth + padding || y < -padding || y > mapHeight + padding) {
-      return null;
-    }
+    // Skip flights without lat/lon information
+    if (flight.lat === undefined || flight.lon === undefined) return null;
+
+    // Calculate position using the same function used by the map
+    const { x, y } = calculatePixelCoordinates(
+      flight.lat,
+      flight.lon,
+      tileCoords,
+      zoom,
+      mapWidth,
+      mapHeight
+    );
+
+    // Apply offset correction if provided
+    const finalX = offsetCorrection ? x + offsetCorrection.x : x;
+    const finalY = offsetCorrection ? y + offsetCorrection.y : y;
+
+    // Skip flights outside the visible area with a larger margin
+    const padding = 100; // Increase padding to show more aircraft
+    if (finalX < -padding || finalX > mapWidth + padding || finalY < -padding || finalY > mapHeight + padding) return null;
     
     // Count displayed flights
     displayedFlights++;
@@ -186,8 +218,8 @@ const FlightOverlay: React.FC<FlightOverlayProps> = ({
         key={flight.hex}
         style={{
           position: 'absolute',
-          left: x,
-          top: y,
+          left: finalX,
+          top: finalY,
           transform: `translate(-50%, -50%)`,
           color: color,
           fontSize: '12px',
@@ -196,21 +228,37 @@ const FlightOverlay: React.FC<FlightOverlayProps> = ({
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
+          zIndex: 21, // Ensure aircraft are above other elements
         }}
       >
-        {/* Fighter jet icon for all aircraft */}
-        <div style={{ marginBottom: '4px' }}>
+        {/* Fighter jet icon for all aircraft with increased size */}
+        <div style={{ marginBottom: '4px', position: 'relative' }}>
           <FighterJetIcon
             rotation={getRotation(flight.track)}
             invertColors={invertColors}
+            size={20} // Larger icon for better visibility
           />
         </div>
         
-        {/* Flight information */}
-        <div style={{ color: textColor, fontWeight: 'bold' }}>
+        {/* Flight information with better contrast */}
+        <div style={{ 
+          color: textColor, 
+          fontWeight: 'bold',
+          backgroundColor: invertColors ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)',
+          padding: '2px 4px',
+          borderRadius: '3px',
+          fontSize: '13px'
+        }}>
           {flight.t || 'Unknown'}
         </div>
-        <div style={{ color: textColor }}>
+        <div style={{ 
+          color: textColor,
+          backgroundColor: invertColors ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)',
+          padding: '2px 4px',
+          borderRadius: '3px',
+          marginTop: '2px',
+          fontSize: '12px'
+        }}>
           {flight.alt_baro ? `${Math.round(flight.alt_baro / 100) * 100}ft` : ''}
         </div>
       </div>
