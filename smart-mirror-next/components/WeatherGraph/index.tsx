@@ -198,24 +198,19 @@ const WeatherGraph: React.FC<WeatherGraphProps> = ({
   // Create gradient fill
   const createGradient = (ctx: CanvasRenderingContext2D) => {
     const gradient = ctx.createLinearGradient(0, 0, 0, graphContainerHeight);
-    gradient.addColorStop(0, 'rgba(126, 231, 199, 0.6)');  // Light teal at top
-    gradient.addColorStop(0.3, 'rgba(83, 166, 192, 0.6)');  // Medium blue-teal
-    gradient.addColorStop(1, 'rgba(40, 80, 150, 0.6)');    // Dark blue at bottom
+    
+    // Use different gradient colors based on theme
+    if (darkTheme) {
+      gradient.addColorStop(0, 'rgba(126, 231, 199, 0.6)');  // Light teal at top
+      gradient.addColorStop(0.3, 'rgba(83, 166, 192, 0.6)');  // Medium blue-teal
+      gradient.addColorStop(1, 'rgba(40, 80, 150, 0.6)');    // Dark blue at bottom
+    } else {
+      gradient.addColorStop(0, 'rgba(126, 231, 199, 0.8)');  // Light teal at top (more opaque)
+      gradient.addColorStop(0.3, 'rgba(83, 166, 192, 0.8)');  // Medium blue-teal (more opaque)
+      gradient.addColorStop(1, 'rgba(40, 80, 150, 0.8)');    // Dark blue at bottom (more opaque)
+    }
+    
     return gradient;
-  };
-
-  // Get weather icon based on condition and time
-  const getWeatherIcon = (iconCode: string) => {
-    // Custom icon mapping could be added here
-    return (
-      <div className="relative">
-        <img 
-          src={getWeatherIconUrl(iconCode)} 
-          alt="Weather icon"
-          className="w-full h-full object-contain filter drop-shadow-glow"
-        />
-      </div>
-    );
   };
 
   // Prepare chart data
@@ -259,7 +254,7 @@ const WeatherGraph: React.FC<WeatherGraphProps> = ({
         max: maxTemp,
         position: 'right',
         ticks: {
-          color: 'rgba(255, 255, 255, 0.9)',
+          color: darkTheme ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.8)',
           font: {
             size: 32,
             weight: 'bold',
@@ -275,7 +270,7 @@ const WeatherGraph: React.FC<WeatherGraphProps> = ({
         },
         grid: {
           display: true,
-          color: 'rgba(255, 255, 255, 0.1)',
+          color: darkTheme ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
           lineWidth: 1,
         },
         border: {
@@ -284,7 +279,7 @@ const WeatherGraph: React.FC<WeatherGraphProps> = ({
       },
       x: {
         ticks: {
-          color: 'rgba(255, 255, 255, 0.9)',
+          color: darkTheme ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.8)',
           font: {
             size: 32,
             weight: 'bold',
@@ -293,7 +288,7 @@ const WeatherGraph: React.FC<WeatherGraphProps> = ({
         },
         grid: {
           display: true,
-          color: 'rgba(255, 255, 255, 0.1)',
+          color: darkTheme ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
           lineWidth: 1,
           drawTicks: false,
         },
@@ -318,7 +313,9 @@ const WeatherGraph: React.FC<WeatherGraphProps> = ({
         display: false,
       },
       tooltip: {
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        backgroundColor: darkTheme ? 'rgba(0, 0, 0, 0.8)' : 'rgba(255, 255, 255, 0.8)',
+        titleColor: darkTheme ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
+        bodyColor: darkTheme ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
         titleFont: {
           size: 16,
         },
@@ -400,11 +397,11 @@ const WeatherGraph: React.FC<WeatherGraphProps> = ({
     return (
       <div 
         style={{ width, height }} 
-        className="flex items-center justify-center bg-black/50 backdrop-blur-sm rounded-lg"
+        className={`flex items-center justify-center ${darkTheme ? 'bg-black/50' : 'bg-white/50'} backdrop-blur-sm rounded-lg`}
       >
         <div className="flex flex-col items-center">
-          <div className="animate-pulse w-16 h-16 rounded-full bg-white/20 mb-4"></div>
-          <p className="text-white text-xl">Loading weather data...</p>
+          <div className={`animate-pulse w-16 h-16 rounded-full ${darkTheme ? 'bg-white/20' : 'bg-black/20'} mb-4`}></div>
+          <p className={`${darkTheme ? 'text-white' : 'text-black'} text-xl`}>Loading weather data...</p>
         </div>
       </div>
     );
@@ -414,7 +411,7 @@ const WeatherGraph: React.FC<WeatherGraphProps> = ({
     return (
       <div 
         style={{ width, height }} 
-        className="flex items-center justify-center bg-black/50 backdrop-blur-sm rounded-lg"
+        className={`flex items-center justify-center ${darkTheme ? 'bg-black/50' : 'bg-white/50'} backdrop-blur-sm rounded-lg`}
       >
         <p className="text-red-400 text-xl">
           <span className="mr-2">⚠️</span>
@@ -429,16 +426,16 @@ const WeatherGraph: React.FC<WeatherGraphProps> = ({
       {renderCurrentWeather()}
       <div 
         style={{ width, height: graphContainerHeight }} 
-        className="relative p-4 bg-black/50 backdrop-blur-sm rounded-lg shadow-2xl overflow-hidden"
+        className={`relative p-4 ${darkTheme ? 'bg-black/50' : 'bg-white/50'} backdrop-blur-sm rounded-lg shadow-2xl overflow-hidden`}
       >
-        <div className="absolute inset-0 bg-gradient-to-b from-blue-500/5 to-purple-500/5 z-0"></div>
+        <div className={`absolute inset-0 bg-gradient-to-b ${darkTheme ? 'from-blue-500/5 to-purple-500/5' : 'from-blue-500/10 to-purple-500/10'} z-0`}></div>
         {renderWeatherIcons()}
         {weatherData.length > 0 ? (
           <div className="relative z-10 h-full">
             <Line data={chartData} options={chartOptions} />
           </div>
         ) : (
-          <p className="text-white text-center">No weather data available</p>
+          <p className={`${darkTheme ? 'text-white' : 'text-black'} text-center`}>No weather data available</p>
         )}
       </div>
     </div>

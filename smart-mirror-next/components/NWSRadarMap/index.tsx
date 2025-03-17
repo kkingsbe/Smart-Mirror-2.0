@@ -200,7 +200,7 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
     frames.forEach((frame, index) => {
       if (newLoadedFrames[index]) return; // Skip already loaded frames
       
-      const img = new Image();
+      const img = new window.Image();
       img.onload = () => {
         newLoadedFrames[index] = true;
         loadedCount++;
