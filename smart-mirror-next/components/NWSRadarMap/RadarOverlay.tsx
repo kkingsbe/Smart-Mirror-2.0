@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { RadarFrame } from './types';
 
 interface RadarOverlayProps {
@@ -11,6 +11,7 @@ interface RadarOverlayProps {
 
 /**
  * Component that displays the radar frames as an overlay on the map
+ * Optimized to keep all frames loaded in the DOM for instant transitions
  */
 const RadarOverlay: React.FC<RadarOverlayProps> = ({
   frames,
@@ -19,6 +20,28 @@ const RadarOverlay: React.FC<RadarOverlayProps> = ({
   darkTheme,
   loadedFrames = [],
 }) => {
+  // Track if all images have been preloaded
+  const [preloaded, setPreloaded] = useState<boolean[]>([]);
+  
+  // Preload all images when the component mounts or frames change
+  useEffect(() => {
+    if (frames.length === 0) return;
+    
+    // Initialize preloaded state if needed
+    if (preloaded.length !== frames.length) {
+      setPreloaded(new Array(frames.length).fill(false));
+    }
+  }, [frames, preloaded.length]);
+  
+  // Handle image preloading
+  const handleImageLoad = (index: number) => {
+    if (!preloaded[index]) {
+      const newPreloaded = [...preloaded];
+      newPreloaded[index] = true;
+      setPreloaded(newPreloaded);
+    }
+  };
+
   return (
     <>
       {frames.map((frame, index) => (
@@ -34,6 +57,8 @@ const RadarOverlay: React.FC<RadarOverlayProps> = ({
             transition: 'opacity 0.2s ease-in-out',
             overflow: 'hidden',
             zIndex: 5,
+            // Keep all frames in the DOM with visibility property instead of removing them
+            visibility: 'visible',
           }}
         >
           <img
@@ -48,6 +73,10 @@ const RadarOverlay: React.FC<RadarOverlayProps> = ({
               objectFit: 'cover',
               mixBlendMode: darkTheme ? 'screen' : 'normal', // Improve visibility on dark backgrounds
             }}
+            // Preload images and track loading state
+            onLoad={() => handleImageLoad(index)}
+            // Use loading="eager" to prioritize loading
+            loading="eager"
           />
         </div>
       ))}
