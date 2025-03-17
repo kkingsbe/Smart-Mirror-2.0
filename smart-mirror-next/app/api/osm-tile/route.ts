@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
       
       // Try multiple tile servers to improve reliability in production
       const servers = darkTheme 
-        ? ['a', 'b', 'c', 'd'] // CartoDB has multiple subdomains
+        ? ['b', 'c', 'd'] // CartoDB has multiple subdomains
         : ['a', 'b', 'c'];     // OSM has multiple subdomains
       
       // Select a server based on the tile coordinates for better distribution

@@ -128,8 +128,8 @@ const BaseMap: React.FC<BaseMapProps> = ({
   const centerY = height / 2;
   
   // Calculate the position of the center tile
-  const centerTileX = tileCoords.xtile * tileSize;
-  const centerTileY = tileCoords.ytile * tileSize;
+  const centerTileX = Math.round(tileCoords.xtile * tileSize);
+  const centerTileY = Math.round(tileCoords.ytile * tileSize);
   
   // Calculate the offset needed to center the exact coordinates
   const xOffset = centerX - centerTileX;
@@ -251,7 +251,11 @@ const BaseMap: React.FC<BaseMapProps> = ({
                   width: `${tileSize}px`,
                   height: `${tileSize}px`,
                   filter: darkTheme ? 'brightness(0.8) contrast(1.2)' : 'none', // Enhance dark theme
-                  border: process.env.NODE_ENV === 'production' ? '1px solid rgba(255,0,0,0.2)' : 'none', // Visual debug in production
+                  border: 'none', // Remove debug border that was causing yellow lines
+                  display: 'block', // Prevent inline image gaps
+                  margin: 0, // Remove any default margins
+                  padding: 0, // Remove any default padding
+                  imageRendering: 'auto', // Improve image rendering
                 }}
                 onLoad={() => handleTileLoad(tileKey)}
                 onError={(e) => {

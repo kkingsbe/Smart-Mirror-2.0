@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { NWSRadarMapProps, RadarFrame, WeatherAlert } from './types';
 import { calculateTileCoordinates, sortAlertsBySeverity } from './utils';
 import BaseMap from './BaseMap';
@@ -64,7 +64,7 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
   }, [lat, lon, zoom, tileCoords]);
   
   // Fetch radar data from our API with retry logic
-  const fetchRadarData = async () => {
+  const fetchRadarData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     
@@ -124,10 +124,10 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
         setAnimationPaused(false);
       }
     }
-  };
+  }, [lat, lon, zoom, frameCount, frameInterval, opacity]);
   
   // Fetch weather alerts for the location
-  const fetchWeatherAlerts = async () => {
+  const fetchWeatherAlerts = useCallback(async () => {
     try {
       // Fetch alerts within 20 miles of the location
       const response = await fetch(`/api/nws-alerts?lat=${lat}&lon=${lon}&radius=20`);
@@ -152,7 +152,7 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
       console.error('Error fetching weather alerts:', error);
       // Don't show an error for alerts - they're not critical
     }
-  };
+  }, [lat, lon]);
   
   // Initialize and set up refresh interval
   useEffect(() => {
