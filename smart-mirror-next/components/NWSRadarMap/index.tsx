@@ -81,8 +81,6 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
     alerts,
     currentAlert,
     setCurrentAlert,
-    setupAlertsInterval,
-    setupAlertAnimation,
     fetchWeatherAlerts,
   } = useWeatherAlerts({
     lat,
@@ -95,15 +93,11 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
     if (!isVisible) return;
 
     const cleanupRadar = setupRefreshInterval();
-    const cleanupAlerts = setupAlertsInterval();
-    const cleanupAlertAnimation = setupAlertAnimation();
 
     return () => {
       cleanupRadar?.();
-      cleanupAlerts?.();
-      cleanupAlertAnimation?.();
     };
-  }, [isVisible, setupRefreshInterval, setupAlertsInterval, setupAlertAnimation]);
+  }, [isVisible, setupRefreshInterval]);
 
   // Animate the radar frames
   useEffect(() => {

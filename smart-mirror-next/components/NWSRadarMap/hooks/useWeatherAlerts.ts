@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { WeatherAlert } from '../types';
 import { sortAlertsBySeverity } from '../utils';
 
@@ -12,7 +12,7 @@ export const useWeatherAlerts = ({ lat, lon, isVisible }: UseWeatherAlertsProps)
   const [alerts, setAlerts] = useState<WeatherAlert[]>([]);
   const [currentAlert, setCurrentAlert] = useState<number>(0);
   const alertsIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const alertAnimationRef = useRef<number | null>(null);
+  const alertAnimationRef = useRef<NodeJS.Timeout | null>(null);
 
   const fetchWeatherAlerts = useCallback(async () => {
     try {
@@ -42,9 +42,21 @@ export const useWeatherAlerts = ({ lat, lon, isVisible }: UseWeatherAlertsProps)
   }, [lat, lon]);
 
   // Set up alerts refresh interval
-  const setupAlertsInterval = useCallback(() => {
-    if (!isVisible) return;
+  useEffect(() => {
+    if (!isVisible) {
+      // Clear intervals when not visible
+      if (alertsIntervalRef.current) {
+        clearInterval(alertsIntervalRef.current);
+        alertsIntervalRef.current = null;
+      }
+      if (alertAnimationRef.current) {
+        clearInterval(alertAnimationRef.current);
+        alertAnimationRef.current = null;
+      }
+      return;
+    }
 
+    // Initial fetch
     fetchWeatherAlerts();
     
     // Refresh alerts every 5 minutes
@@ -55,16 +67,24 @@ export const useWeatherAlerts = ({ lat, lon, isVisible }: UseWeatherAlertsProps)
     return () => {
       if (alertsIntervalRef.current) {
         clearInterval(alertsIntervalRef.current);
+        alertsIntervalRef.current = null;
       }
       if (alertAnimationRef.current) {
-        cancelAnimationFrame(alertAnimationRef.current);
+        clearInterval(alertAnimationRef.current);
+        alertAnimationRef.current = null;
       }
     };
   }, [isVisible, fetchWeatherAlerts]);
 
   // Animate the weather alerts
-  const setupAlertAnimation = useCallback(() => {
-    if (alerts.length <= 1) return;
+  useEffect(() => {
+    if (!isVisible || alerts.length <= 1) {
+      if (alertAnimationRef.current) {
+        clearInterval(alertAnimationRef.current);
+        alertAnimationRef.current = null;
+      }
+      return;
+    }
 
     const advanceAlert = () => {
       setCurrentAlert((prevAlert) => (prevAlert + 1) % alerts.length);
@@ -72,18 +92,20 @@ export const useWeatherAlerts = ({ lat, lon, isVisible }: UseWeatherAlertsProps)
     
     // Change alert every 5 seconds
     const alertInterval = setInterval(advanceAlert, 5000);
+    alertAnimationRef.current = alertInterval;
     
     return () => {
-      clearInterval(alertInterval);
+      if (alertAnimationRef.current) {
+        clearInterval(alertAnimationRef.current);
+        alertAnimationRef.current = null;
+      }
     };
-  }, [alerts]);
+  }, [isVisible, alerts]);
 
   return {
     alerts,
     currentAlert,
     setCurrentAlert,
-    setupAlertsInterval,
-    setupAlertAnimation,
     fetchWeatherAlerts,
   };
 }; 

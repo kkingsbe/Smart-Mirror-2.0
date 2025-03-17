@@ -62,14 +62,17 @@ export const useRadarData = ({
       const newFrames = data.frames.reverse();
       setFrames(newFrames);
       
-      // Initialize the loadedFrames array with false values
-      setLoadedFrames(new Array(newFrames.length).fill(false));
+      // Initialize the loadedFrames array with true values since we have the data
+      setLoadedFrames(new Array(newFrames.length).fill(true));
       setCurrentFrame(0);
       
       // Resume animation after a short delay to allow the base map to stabilize
       setTimeout(() => {
         setAnimationPaused(false);
       }, 1000);
+      
+      // Set loading to false after successful fetch
+      setIsLoading(false);
       
     } catch (error) {
       console.error('Error fetching radar data:', error);
