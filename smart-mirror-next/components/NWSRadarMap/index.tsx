@@ -39,7 +39,6 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
   frameInterval = 15, // Default to 15 minutes between frames
   opacity = 0.5, // Default to 50% opacity
   showLocationMarker = true, // Default to showing the location marker
-  contrast = 1.2, // Default contrast enhancement
   invertColors, // Allow override through props
 }) => {
   const mapRef = useRef<HTMLDivElement>(null) as React.RefObject<HTMLDivElement>;

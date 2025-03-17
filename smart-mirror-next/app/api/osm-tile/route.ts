@@ -155,7 +155,7 @@ export async function GET(request: NextRequest) {
         // Process the image to increase contrast
         // Using linear function for contrast adjustment
         // Formula: contrast * x + (-(128 * contrast) + 128)
-        let imageProcessor = sharp(Buffer.from(imageBuffer))
+        const imageProcessor = sharp(Buffer.from(imageBuffer))
           .linear(
             contrast, // Multiply by contrast factor
             -(128 * contrast) + 128 // Offset to maintain proper brightness
