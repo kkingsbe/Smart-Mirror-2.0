@@ -23,11 +23,10 @@ const BaseMap: React.FC<BaseMapProps> = ({
   onLoaded,
 }) => {
   const [loadedTiles, setLoadedTiles] = useState<Record<string, boolean>>({});
-  const [tileErrors, setTileErrors] = useState<Record<string, boolean>>({});
   const [tileUrls, setTileUrls] = useState<Record<string, string>>({});
   const tilesInitialized = useRef(false);
   const baseMapLoaded = useRef(false);
-  
+
   // Check if enough tiles have loaded to consider the base map ready
   useEffect(() => {
     // Consider the base map loaded when at least 50% of tiles are loaded
@@ -132,18 +131,6 @@ const BaseMap: React.FC<BaseMapProps> = ({
     });
   };
   
-  // Track tile load errors
-  const handleTileError = (tileKey: string, tileX: number, tileY: number, tileZoom: number) => {
-    setTileErrors(prev => {
-      // Only update if not already errored to prevent unnecessary re-renders
-      if (!prev[tileKey]) {
-        console.error(`Failed to load tile: ${tileKey} (${tileX},${tileY},${tileZoom})`);
-        return {...prev, [tileKey]: true};
-      }
-      return prev;
-    });
-  };
-  
   return (
     <div
       style={{
@@ -203,7 +190,6 @@ const BaseMap: React.FC<BaseMapProps> = ({
                 }}
                 onLoad={() => handleTileLoad(tileKey)}
                 onError={(e) => {
-                  handleTileError(tileKey, tileX, tileY, zoom);
                   // Set a fallback background color for failed tiles
                   (e.target as HTMLImageElement).style.backgroundColor = darkTheme ? '#121212' : '#f0f0f0';
                   // Add a visual indicator for failed tiles
