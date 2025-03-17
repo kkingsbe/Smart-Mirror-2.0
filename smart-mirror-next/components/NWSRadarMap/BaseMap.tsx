@@ -8,6 +8,8 @@ interface BaseMapProps {
   height: number;
   zoom: number;
   darkTheme: boolean;
+  contrast?: number; // Optional contrast parameter
+  invertColors?: boolean; // Optional color inversion parameter
   onLoaded?: () => void; // Optional callback when base map has loaded
 }
 
@@ -20,6 +22,8 @@ const BaseMap: React.FC<BaseMapProps> = ({
   height,
   zoom,
   darkTheme,
+  contrast = 1.2, // Default contrast value
+  invertColors = true, // Default to inverting colors
   onLoaded,
 }) => {
   const [loadedTiles, setLoadedTiles] = useState<Record<string, boolean>>({});
@@ -108,7 +112,7 @@ const BaseMap: React.FC<BaseMapProps> = ({
           
           // Generate URL with a timestamp that won't change during the component's lifecycle
           const timestamp = Date.now();
-          const tileUrl = `${getTileUrl(tileX, tileY, zoom, darkTheme)}&t=${timestamp}`;
+          const tileUrl = `${getTileUrl(tileX, tileY, zoom, darkTheme, contrast, invertColors)}&t=${timestamp}`;
           
           newTileUrls[tileKey] = tileUrl;
         });
@@ -117,7 +121,7 @@ const BaseMap: React.FC<BaseMapProps> = ({
       setTileUrls(newTileUrls);
       tilesInitialized.current = true;
     }
-  }, [tileCoords, zoom, darkTheme, tileOffsets]);
+  }, [tileCoords, zoom, darkTheme, contrast, invertColors, tileOffsets]);
   
   // Track tile load success
   const handleTileLoad = (tileKey: string) => {

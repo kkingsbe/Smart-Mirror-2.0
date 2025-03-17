@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import sharp from 'sharp';
 
 // Keep track of logged requests to prevent excessive logging
 const loggedRequests = new Set<string>();
@@ -19,6 +20,10 @@ export async function GET(request: NextRequest) {
   const darkTheme = searchParams.get('darkTheme') === 'true';
   const mode = searchParams.get('mode') || 'single'; // 'single' or 'multiple'
   const env = searchParams.get('env'); // Environment marker
+  // Get contrast level (default to 1.2 for slight enhancement)
+  const contrast = parseFloat(searchParams.get('contrast') || '1.2');
+  // Get invert parameter (default to true)
+  const invertColors = searchParams.get('invert') === 'true';
   
   // Get user agent for debugging
   const userAgent = request.headers.get('user-agent') || 'unknown';
@@ -38,6 +43,8 @@ export async function GET(request: NextRequest) {
       y, 
       darkTheme, 
       mode,
+      contrast,
+      invertColors,
       environment: process.env.NODE_ENV,
       vercelEnv: process.env.VERCEL_ENV || 'not-vercel',
       isRaspberryPi,
@@ -145,8 +152,28 @@ export async function GET(request: NextRequest) {
           throw new Error('Invalid tile data (too small)');
         }
         
-        // Return the image with appropriate headers
-        return new NextResponse(imageBuffer, {
+        // Process the image to increase contrast
+        // Using linear function for contrast adjustment
+        // Formula: contrast * x + (-(128 * contrast) + 128)
+        let imageProcessor = sharp(Buffer.from(imageBuffer))
+          .linear(
+            contrast, // Multiply by contrast factor
+            -(128 * contrast) + 128 // Offset to maintain proper brightness
+          )
+          .modulate({
+            brightness: 1.0, // Keep brightness the same
+            saturation: 1.1  // Slightly increase saturation
+          });
+        
+        // Only invert colors if requested
+        if (invertColors) {
+          imageProcessor = imageProcessor.negate();
+        }
+        
+        const processedImageBuffer = await imageProcessor.toBuffer();
+        
+        // Return the processed image with appropriate headers
+        return new NextResponse(processedImageBuffer, {
           headers: {
             'Content-Type': 'image/png',
             // Disable caching completely

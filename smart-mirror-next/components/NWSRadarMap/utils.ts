@@ -42,7 +42,14 @@ export const calculateTileCoordinates = (lat: number, lon: number, zoom: number)
 /**
  * Get tile URL for the base map
  */
-export const getTileUrl = (x: number, y: number, zoom: number, darkTheme: boolean): string => {
+export const getTileUrl = (
+  x: number, 
+  y: number, 
+  zoom: number, 
+  darkTheme: boolean, 
+  contrast: number = 1.2,
+  invertColors: boolean = true
+): string => {
   // Ensure zoom is valid
   const validZoom = Math.max(0, Math.min(19, zoom));
   
@@ -57,10 +64,10 @@ export const getTileUrl = (x: number, y: number, zoom: number, darkTheme: boolea
   const envMarker = process.env.NODE_ENV === 'production' ? 'prod' : 'dev';
   
   // Log tile URL parameters only once per tile to prevent excessive logging
-  const logKey = `${validX},${validY},${validZoom},${darkTheme}`;
+  const logKey = `${validX},${validY},${validZoom},${darkTheme},${contrast},${invertColors}`;
   if (!loggedTiles.has(logKey)) {
     console.log('getTileUrl:', { 
-      input: { x, y, zoom, darkTheme }, 
+      input: { x, y, zoom, darkTheme, contrast, invertColors }, 
       valid: { validX, validY, validZoom },
       environment: process.env.NODE_ENV
     });
@@ -76,7 +83,7 @@ export const getTileUrl = (x: number, y: number, zoom: number, darkTheme: boolea
     }
   }
   
-  return `/api/osm-tile?z=${validZoom}&x=${validX}&y=${validY}&darkTheme=${darkTheme}&env=${envMarker}`;
+  return `/api/osm-tile?z=${validZoom}&x=${validX}&y=${validY}&darkTheme=${darkTheme}&env=${envMarker}&contrast=${contrast}&invert=${invertColors}`;
 };
 
 /**

@@ -28,6 +28,8 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
   frameInterval = 15, // Default to 15 minutes between frames
   opacity = 0.5, // Default to 50% opacity
   showLocationMarker = true, // Default to showing the location marker
+  contrast = 0.7, // Default contrast enhancement
+  invertColors = false, // Default to inverting colors
 }) => {
   const mapRef = useRef<HTMLDivElement>(null) as React.RefObject<HTMLDivElement>;
   const [baseMapLoaded, setBaseMapLoaded] = useState<boolean>(false);
@@ -179,6 +181,8 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
             height={height}
             zoom={zoom}
             darkTheme={darkTheme}
+            contrast={contrast}
+            invertColors={invertColors}
             onLoaded={handleBaseMapLoaded}
           />
           

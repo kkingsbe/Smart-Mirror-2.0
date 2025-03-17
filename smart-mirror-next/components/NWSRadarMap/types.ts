@@ -11,6 +11,8 @@ export interface NWSRadarMapProps {
   frameInterval?: number; // Time between frames in minutes (default: 15)
   opacity?: number; // Opacity of the radar layer (0.0 to 1.0)
   showLocationMarker?: boolean; // Whether to show a marker at the specified location
+  contrast?: number; // Contrast enhancement for map tiles (default: 1.2)
+  invertColors?: boolean; // Whether to invert the colors of the map tiles (default: true)
 }
 
 export interface RadarFrame {
