@@ -112,8 +112,9 @@ export async function GET(request: NextRequest) {
             'Pragma': 'no-cache'
           },
           signal: controller.signal,
-          // Use default caching in production now that we've fixed the issues
-          cache: 'default'
+          // Disable caching completely
+          cache: 'no-store',
+          next: { revalidate: 0 }
         });
         
         clearTimeout(timeoutId);
@@ -136,9 +137,11 @@ export async function GET(request: NextRequest) {
         return new NextResponse(imageBuffer, {
           headers: {
             'Content-Type': 'image/png',
-            // Use normal caching now that we've fixed the issues
-            'Cache-Control': 'public, max-age=86400', // Cache for 24 hours
-            'Vary': 'Accept-Encoding'
+            // Disable caching completely
+            'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0',
+            'Surrogate-Control': 'no-store'
           },
         });
       } catch (fetchError: unknown) {
