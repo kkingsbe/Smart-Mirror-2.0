@@ -26,38 +26,27 @@ const RadarOverlay: React.FC<RadarOverlayProps> = ({
   const [loadErrors, setLoadErrors] = useState<boolean[]>([]);
   const [renderAttempt, setRenderAttempt] = useState<number>(0);
   const imagesRef = useRef<(HTMLImageElement | null)[]>([]);
-  const [lastFrame, setLastFrame] = useState<number>(currentFrame);
-  const [transition, setTransition] = useState<'none' | 'fadeIn' | 'fadeOut'>('none');
+  const [prevFrame, setPrevFrame] = useState<number>(currentFrame);
   
-  // Track frame transitions for smooth crossfade
+  // Track frame changes for smooth crossfade
   useEffect(() => {
-    if (currentFrame !== lastFrame) {
-      // Start the fade-in transition for the new frame
-      setTransition('fadeIn');
-      
-      // After the fade-in is complete, start the fade-out of the old frame
-      const fadeOutTimer = setTimeout(() => {
-        setTransition('fadeOut');
-        setLastFrame(currentFrame);
-      }, 500); // Matches the transition duration
-      
-      return () => clearTimeout(fadeOutTimer);
+    if (currentFrame !== prevFrame) {
+      setPrevFrame(currentFrame);
     }
-  }, [currentFrame, lastFrame]);
+  }, [currentFrame, prevFrame]);
   
   // Debug info for production troubleshooting
   useEffect(() => {
     console.log('RadarOverlay render:', {
       framesCount: frames.length,
       currentFrame,
-      lastFrame,
-      transition,
+      prevFrame,
       preloadedCount: preloaded.filter(Boolean).length,
       loadErrorsCount: loadErrors.filter(Boolean).length,
       renderAttempt,
       environment: process.env.NODE_ENV
     });
-  }, [frames.length, currentFrame, lastFrame, transition, preloaded, loadErrors, renderAttempt]);
+  }, [frames.length, currentFrame, prevFrame, preloaded, loadErrors, renderAttempt]);
   
   // Preload images progressively to avoid overwhelming the device
   useEffect(() => {
@@ -151,67 +140,32 @@ const RadarOverlay: React.FC<RadarOverlayProps> = ({
     };
   }, [frames, currentFrame, renderAttempt, loadErrors, preloaded]);
   
-  // Include current, next, and previous frames to create a smooth transition
-  const visibleFrames = frames.filter((_, index) => 
-    index === currentFrame || 
-    index === (currentFrame + 1) % frames.length ||
-    index === lastFrame
-  );
-  
-  const visibleFrameIndices = visibleFrames.map((frame) => 
-    frames.findIndex(f => f === frame)
-  );
-
+  // Render all frames to allow for smooth transitions
   return (
     <>
-      {/* Render current, next, and previous frames to create smooth transitions */}
-      {visibleFrames.map((frame, i) => {
-        const originalIndex = visibleFrameIndices[i];
-        const isCurrentFrame = originalIndex === currentFrame;
-        const isNextFrame = originalIndex === (currentFrame + 1) % frames.length;
-        const isPrevFrame = originalIndex === lastFrame && lastFrame !== currentFrame;
-        
-        // Calculate appropriate opacity for each frame type based on transition state
-        let frameOpacity = 0;
-        
-        if (isCurrentFrame) {
-          frameOpacity = opacity;
-        } else if (isNextFrame) {
-          // Next frame fades in during the fadeIn transition
-          if (transition === 'fadeIn' || transition === 'fadeOut') {
-            frameOpacity = opacity;
-          } else {
-            frameOpacity = 0;
-          }
-        } else if (isPrevFrame) {
-          // Previous frame stays visible during fadeIn, then fades out during fadeOut
-          if (transition === 'none' || transition === 'fadeIn') {
-            frameOpacity = opacity;
-          } else {
-            frameOpacity = 0;
-          }
-        }
+      {frames.map((frame, index) => {
+        const isCurrentFrame = index === currentFrame;
         
         return (
           <div
-            key={originalIndex}
+            key={index}
             style={{
               position: 'absolute',
               top: 0,
               left: 0,
               width: '100%',
               height: '100%',
-              opacity: (loadedFrames.length === 0 || loadedFrames[originalIndex]) ? frameOpacity : 0,
-              transition: 'opacity 0.5s ease-in-out', // Smoother, slightly longer transition
+              opacity: isCurrentFrame && (loadedFrames.length === 0 || loadedFrames[index]) ? opacity : 0,
+              transition: 'opacity 0.8s cubic-bezier(0.4, 0.0, 0.2, 1)',
               overflow: 'hidden',
-              zIndex: isCurrentFrame ? 5 : (isNextFrame ? 6 : 4), // Layer ordering: prev < current < next
-              visibility: 'visible', // All frames are visible but controlled by opacity
+              zIndex: 5,
+              visibility: 'visible',
             }}
           >
-            {preloaded[originalIndex] && !loadErrors[originalIndex] && (
+            {preloaded[index] && !loadErrors[index] && (
               <Image
                 src={frame.imageData}
-                alt={`Weather radar frame ${originalIndex + 1}`}
+                alt={`Weather radar frame ${index + 1}`}
                 style={{
                   position: 'absolute',
                   top: 0,
@@ -228,7 +182,7 @@ const RadarOverlay: React.FC<RadarOverlayProps> = ({
                   // Handle runtime errors
                   setLoadErrors(prev => {
                     const newState = [...prev];
-                    newState[originalIndex] = true;
+                    newState[index] = true;
                     return newState;
                   });
                 }}
@@ -236,7 +190,7 @@ const RadarOverlay: React.FC<RadarOverlayProps> = ({
             )}
             
             {/* Show loading indicator if frame is not loaded yet */}
-            {(!preloaded[originalIndex] && !loadErrors[originalIndex] && (isCurrentFrame || isNextFrame)) && (
+            {(!preloaded[index] && !loadErrors[index] && isCurrentFrame) && (
               <div style={{
                 position: 'absolute',
                 top: '50%',
@@ -253,7 +207,7 @@ const RadarOverlay: React.FC<RadarOverlayProps> = ({
             )}
             
             {/* Show error message if frame failed to load */}
-            {(loadErrors[originalIndex] && (isCurrentFrame || isNextFrame)) && (
+            {(loadErrors[index] && isCurrentFrame) && (
               <div style={{
                 position: 'absolute',
                 top: '50%',
