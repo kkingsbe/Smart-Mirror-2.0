@@ -48,7 +48,7 @@ const WeatherAlerts: React.FC<WeatherAlertsProps> = ({
     
     // Only scroll if text is overflowing
     if (textWidth > containerWidth) {
-      let animationState = {
+      const animationState = {
         position: 0,
         paused: false
       };

@@ -105,7 +105,6 @@ const FlightOverlay: React.FC<FlightOverlayProps> = ({
   mapWidth,
   mapHeight,
   zoom,
-  darkTheme = true,
   invertColors = false,
   offsetCorrection,
 }) => {
