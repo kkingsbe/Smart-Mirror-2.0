@@ -30,6 +30,7 @@ export default function Home() {
   return (
     <main className="flex flex-col justify-center h-screen text-white bg-black">
       <DateTime />
+      
       <div className="flex flex-col items-center justify-center mt-auto mb-10">
         <div className={`mb-4 w-full max-w-[960px] ${showWeatherGraph ? 'block' : 'hidden'}`}>
           <WeatherGraph 
@@ -54,6 +55,7 @@ export default function Home() {
             frameInterval={15} // 15-minute intervals
             opacity={0.5} // 50% opacity
             showLocationMarker={true} // Show location marker
+            showFlights={true} // Show military flights from the dedicated endpoint
           />
         </div>
       </div>

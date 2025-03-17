@@ -13,6 +13,21 @@ export interface NWSRadarMapProps {
   showLocationMarker?: boolean; // Whether to show a marker at the specified location
   contrast?: number; // Contrast enhancement for map tiles (default: 1.2)
   invertColors?: boolean; // Whether to invert the colors of the map tiles (default: true)
+  showFlights?: boolean; // Whether to show flight data on the map
+}
+
+export interface Flight {
+  hex: string;
+  flight?: string;
+  alt_baro?: number;
+  gs?: number;
+  track?: number;
+  lat?: number;
+  lon?: number;
+  r?: string;
+  t?: string;
+  type?: string;
+  distance?: number;
 }
 
 export interface RadarFrame {

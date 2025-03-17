@@ -5,9 +5,11 @@ import BaseMap from './BaseMap';
 import RadarOverlay from './RadarOverlay';
 import WeatherAlerts from './WeatherAlerts';
 import LocationMarker from './LocationMarker';
+import FlightOverlay from './FlightOverlay';
 import { MapStatus } from './MapStatus';
 import { useRadarData } from './hooks/useRadarData';
 import { useWeatherAlerts } from './hooks/useWeatherAlerts';
+import { useFlightData } from './hooks/useFlightData';
 import { useVisibility } from './hooks/useVisibility';
 
 /**
@@ -40,6 +42,8 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
   opacity = 0.5, // Default to 50% opacity
   showLocationMarker = true, // Default to showing the location marker
   invertColors, // Allow override through props
+  showFlights = true, // Default to showing flight data on the map
+  refreshInterval = 5, // in minutes, default to 5 minutes
 }) => {
   const mapRef = useRef<HTMLDivElement>(null) as React.RefObject<HTMLDivElement>;
   const [baseMapLoaded, setBaseMapLoaded] = useState<boolean>(false);
@@ -113,16 +117,32 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
     isVisible,
   });
 
+  // Handle flight data
+  const {
+    flights,
+    isLoading: isLoadingFlights,
+    error: flightError,
+    setupRefreshInterval: setupFlightRefreshInterval,
+  } = useFlightData({
+    isVisible,
+    refreshInterval: 15, // refresh flight data every 15 seconds
+    lat,
+    lon,
+    radius: 200, // 200nm radius
+  });
+
   // Initialize data fetching and animations
   useEffect(() => {
     if (!isVisible) return;
 
     const cleanupRadar = setupRefreshInterval();
+    const cleanupFlights = showFlights ? setupFlightRefreshInterval() : undefined;
 
     return () => {
       cleanupRadar?.();
+      cleanupFlights?.();
     };
-  }, [isVisible, setupRefreshInterval]);
+  }, [isVisible, setupRefreshInterval, showFlights, setupFlightRefreshInterval]);
 
   // Animate the radar frames
   useEffect(() => {
@@ -230,6 +250,21 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
               darkTheme={darkTheme}
               loadedFrames={loadedFrames}
             />
+          )}
+          
+          {/* Flight overlay */}
+          {showFlights && baseMapLoaded && !flightError && (
+            <>
+              <FlightOverlay
+                flights={flights}
+                tileCoords={tileCoords}
+                mapWidth={width}
+                mapHeight={height}
+                zoom={zoom}
+                darkTheme={darkTheme}
+                invertColors={effectiveInvertColors}
+              />
+            </>
           )}
           
           {/* Location marker */}
