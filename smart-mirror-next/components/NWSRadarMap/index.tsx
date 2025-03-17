@@ -62,6 +62,7 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
     isLoading,
     error,
     animationPaused,
+    setAnimationPaused,
     setupRefreshInterval,
     fetchRadarData,
   } = useRadarData({
@@ -98,40 +99,41 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
   // Animate the radar frames
   useEffect(() => {
     // Don't animate if there are no frames, if we're still loading, or if animation is paused
-    if (frames.length === 0 || isLoading || animationPaused) {
+    if (frames.length === 0 || isLoading || animationPaused || !baseMapLoaded) {
       return;
     }
     
-    // Don't start animation until base map is loaded
-    if (!baseMapLoaded) {
-      return;
-    }
+    console.log(`Animating frame ${currentFrame} of ${frames.length}`);
     
-    // Function to advance to the next frame
-    const advanceFrame = () => {
-      setCurrentFrame((prevFrame) => (prevFrame + 1) % frames.length);
-    };
-    
-    // Set up the animation loop with a fixed frame rate of 5 seconds per frame
-    const frameRate = 5000; // 5 seconds per frame
-    
-    // Clear any existing animation
+    // Clear any existing animation timeout
     if (animationTimeoutRef.current) {
       clearTimeout(animationTimeoutRef.current);
+      animationTimeoutRef.current = null;
     }
     
-    // Set up the next frame
+    // Calculate the delay before showing the next frame
+    let delay = 1000; // Default 1 second between frames
+    
+    // If we're on the last frame (which is actually index frames.length - 1), use a longer delay
+    if (currentFrame === frames.length - 1) {
+      delay = 3000; // 3 second pause on the last frame
+    }
+    
+    // Set up timeout for the next frame
     animationTimeoutRef.current = setTimeout(() => {
-      advanceFrame();
-    }, frameRate);
+      // Advance to the next frame (or loop back to the first frame)
+      const nextFrame = (currentFrame + 1) % frames.length;
+      setCurrentFrame(nextFrame);
+    }, delay);
     
     // Clean up on unmount
     return () => {
       if (animationTimeoutRef.current) {
         clearTimeout(animationTimeoutRef.current);
+        animationTimeoutRef.current = null;
       }
     };
-  }, [frames, currentFrame, isLoading, animationPaused, baseMapLoaded, loadedFrames, setCurrentFrame]);
+  }, [frames, currentFrame, isLoading, animationPaused, baseMapLoaded, setCurrentFrame]);
 
   // Add debugging for production issues
   useEffect(() => {
