@@ -22,7 +22,6 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
   width = 600,
   height = 500,
   className = '',
-  refreshInterval = 10, // refresh every 10 minutes
   zoom = 7,
   darkTheme = true, // Default to dark theme for smart mirrors
   frameCount = 6, // Default to 6 frames
@@ -42,7 +41,7 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
   };
 
   // Handle visibility and animations
-  const { isVisible, setIsVisible, animationRef, animationTimeoutRef } = useVisibility({
+  const { isVisible, animationTimeoutRef } = useVisibility({
     mapRef,
     onVisibilityChange: (visible) => {
       if (!visible) {
@@ -63,7 +62,6 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
     isLoading,
     error,
     animationPaused,
-    setAnimationPaused,
     setupRefreshInterval,
     fetchRadarData,
   } = useRadarData({
@@ -80,8 +78,6 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
   const {
     alerts,
     currentAlert,
-    setCurrentAlert,
-    fetchWeatherAlerts,
   } = useWeatherAlerts({
     lat,
     lon,
