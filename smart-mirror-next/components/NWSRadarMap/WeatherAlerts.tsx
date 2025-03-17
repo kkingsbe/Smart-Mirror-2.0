@@ -48,33 +48,45 @@ const WeatherAlerts: React.FC<WeatherAlertsProps> = ({
     
     // Only scroll if text is overflowing
     if (textWidth > containerWidth) {
-      // Start scrolling after a delay
+      let animationState = {
+        position: 0,
+        paused: false
+      };
+      
+      // Calculate total scroll distance
+      const scrollDistance = textWidth - containerWidth;
+      const scrollStep = 1; // Pixels per step
+      const scrollInterval = 30; // ms between steps
+      
+      // Start scrolling after initial pause
       const startDelay = setTimeout(() => {
-        // Calculate total scroll distance and duration
-        const scrollDistance = textWidth - containerWidth;
-        const scrollDuration = Math.min(scrollDistance * 25, 6000); // 25ms per pixel, max 6 seconds
-        
-        // Calculate scroll step size based on distance and duration
-        const scrollStep = 1;
-        const scrollInterval = Math.max(10, Math.floor(scrollDuration / scrollDistance));
-        
-        let currentPosition = 0;
-        
         // Create the scrolling interval
         textScrollRef.current = window.setInterval(() => {
+          // If paused, don't update position
+          if (animationState.paused) return;
+          
           // Increment position
-          currentPosition += scrollStep;
+          animationState.position += scrollStep;
+          
+          // If we've reached the end, pause and then reset to beginning
+          if (animationState.position >= scrollDistance) {
+            animationState.paused = true;
+            
+            // Wait at the end before resetting to beginning
+            setTimeout(() => {
+              // Reset position instantly
+              animationState.position = 0;
+              textElement.scrollLeft = 0;
+              
+              // Wait a moment at the beginning before starting to scroll again
+              setTimeout(() => {
+                animationState.paused = false;
+              }, 1000);
+            }, 2000);
+          }
           
           // Apply the scroll position
-          textElement.scrollLeft = currentPosition;
-          
-          // If we've reached the end, stop scrolling
-          if (currentPosition >= scrollDistance) {
-            if (textScrollRef.current !== null) {
-              clearInterval(textScrollRef.current);
-              textScrollRef.current = null;
-            }
-          }
+          textElement.scrollLeft = animationState.position;
         }, scrollInterval);
       }, 2000); // Wait 2 seconds before starting to scroll
       
