@@ -25,6 +25,20 @@ export async function GET(request: NextRequest) {
       }
     });
     
+    // If the location is not supported by NWS, return empty alerts
+    if (pointResponse.status === 404) {
+      console.log(`Location ${lat},${lon} not supported by NWS API`);
+      return NextResponse.json({ 
+        alerts: [],
+        count: 0,
+        location: {
+          lat,
+          lon,
+          radius
+        }
+      });
+    }
+    
     if (!pointResponse.ok) {
       throw new Error(`Failed to fetch NWS grid point: ${pointResponse.status}`);
     }
@@ -40,6 +54,20 @@ export async function GET(request: NextRequest) {
         'Accept': 'application/geo+json'
       }
     });
+    
+    // If county data is not available, return empty alerts
+    if (countyResponse.status === 404) {
+      console.log(`County data not available for location ${lat},${lon}`);
+      return NextResponse.json({ 
+        alerts: [],
+        count: 0,
+        location: {
+          lat,
+          lon,
+          radius
+        }
+      });
+    }
     
     if (!countyResponse.ok) {
       throw new Error(`Failed to fetch county data: ${countyResponse.status}`);
@@ -145,9 +173,15 @@ export async function GET(request: NextRequest) {
     
   } catch (error) {
     console.error('Error fetching NWS alerts:', error);
+    // Return empty alerts array instead of error for unsupported locations
     return NextResponse.json({ 
-      error: 'Failed to fetch NWS alerts', 
-      details: error instanceof Error ? error.message : String(error)
-    }, { status: 500 });
+      alerts: [],
+      count: 0,
+      location: {
+        lat,
+        lon,
+        radius
+      }
+    });
   }
 } 
