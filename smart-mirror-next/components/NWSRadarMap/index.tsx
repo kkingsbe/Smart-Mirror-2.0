@@ -35,12 +35,15 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
   const [currentAlert, setCurrentAlert] = useState<number>(0);
   const [baseMapLoaded, setBaseMapLoaded] = useState<boolean>(false);
   const [animationPaused, setAnimationPaused] = useState<boolean>(false);
+  const [isVisible, setIsVisible] = useState<boolean>(true);
   const animationRef = useRef<number | null>(null);
   const animationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const alertAnimationRef = useRef<number | null>(null);
   const mapRef = useRef<HTMLDivElement>(null);
   const fetchRetryCount = useRef<number>(0);
   const maxRetries = 3;
+  const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const alertsIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
   // Calculate tile coordinates from lat/lon for the base map
   const tileCoords = calculateTileCoordinates(lat, lon, zoom);
@@ -154,24 +157,71 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
     }
   }, [lat, lon]);
   
+  // Handle visibility changes
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsVisible(entry.isIntersecting);
+        if (entry.isIntersecting) {
+          // Resume animations and data fetching when visible
+          setAnimationPaused(false);
+          if (refreshIntervalRef.current) {
+            clearInterval(refreshIntervalRef.current);
+          }
+          if (alertsIntervalRef.current) {
+            clearInterval(alertsIntervalRef.current);
+          }
+          fetchRadarData();
+          fetchWeatherAlerts();
+        } else {
+          // Pause animations and data fetching when hidden
+          setAnimationPaused(true);
+          if (refreshIntervalRef.current) {
+            clearInterval(refreshIntervalRef.current);
+          }
+          if (alertsIntervalRef.current) {
+            clearInterval(alertsIntervalRef.current);
+          }
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (mapRef.current) {
+      observer.observe(mapRef.current);
+    }
+
+    return () => {
+      if (mapRef.current) {
+        observer.unobserve(mapRef.current);
+      }
+    };
+  }, []);
+  
   // Initialize and set up refresh interval
   useEffect(() => {
+    if (!isVisible) return;
+
     fetchRadarData();
     fetchWeatherAlerts();
     
     // Set up refresh interval
-    const radarIntervalId = setInterval(() => {
+    refreshIntervalRef.current = setInterval(() => {
       fetchRadarData();
     }, refreshInterval * 60 * 1000);
     
     // Refresh alerts every 5 minutes
-    const alertsIntervalId = setInterval(() => {
+    alertsIntervalRef.current = setInterval(() => {
       fetchWeatherAlerts();
     }, 5 * 60 * 1000);
     
     return () => {
-      clearInterval(radarIntervalId);
-      clearInterval(alertsIntervalId);
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+      }
+      if (alertsIntervalRef.current) {
+        clearInterval(alertsIntervalRef.current);
+      }
       // Store refs in variables to avoid the cleanup function capturing stale refs
       const animationRefValue = animationRef.current;
       const alertAnimationRefValue = alertAnimationRef.current;
@@ -186,7 +236,7 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
         cancelAnimationFrame(alertAnimationRefValue);
       }
     };
-  }, [lat, lon, zoom, refreshInterval, frameCount, frameInterval, opacity, fetchRadarData, fetchWeatherAlerts]);
+  }, [lat, lon, zoom, refreshInterval, frameCount, frameInterval, opacity, fetchRadarData, fetchWeatherAlerts, isVisible]);
   
   // Preload all radar frame images
   useEffect(() => {
