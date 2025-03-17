@@ -38,6 +38,7 @@ export async function GET(request: NextRequest) {
 
     // Extract the first 8 entries (24 hours, as each entry is 3 hours)
     // Sort entries to ensure they're in chronological order
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const next24Hours = data.list.slice(0, 8).map((item: any) => {
       // Round temperature to nearest integer for cleaner display
       const temp = Math.round(item.main.temp);

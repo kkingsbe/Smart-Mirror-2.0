@@ -10,7 +10,7 @@ import LocationMarker from './LocationMarker';
  * A weather radar map component that displays animated NWS radar data.
  * Uses the National Weather Service API for precipitation radar data
  * and overlays it on an OpenStreetMap base layer.
- * The animation automatically plays and loops.
+ * Optimized for performance on slower devices like Raspberry Pi.
  */
 const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
   lat,
@@ -34,10 +34,14 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
   const [alerts, setAlerts] = useState<WeatherAlert[]>([]);
   const [currentAlert, setCurrentAlert] = useState<number>(0);
   const [allFramesLoaded, setAllFramesLoaded] = useState<boolean>(false);
+  const [baseMapLoaded, setBaseMapLoaded] = useState<boolean>(false);
+  const [animationPaused, setAnimationPaused] = useState<boolean>(false);
   const animationRef = useRef<number | null>(null);
   const animationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const alertAnimationRef = useRef<number | null>(null);
   const mapRef = useRef<HTMLDivElement>(null);
+  const fetchRetryCount = useRef<number>(0);
+  const maxRetries = 3;
   
   // Calculate tile coordinates from lat/lon for the base map
   const tileCoords = calculateTileCoordinates(lat, lon, zoom);
@@ -54,16 +58,21 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
       windowSize: typeof window !== 'undefined' ? { 
         width: window.innerWidth, 
         height: window.innerHeight 
-      } : null
+      } : null,
+      deviceMemory: (navigator as any).deviceMemory || 'unknown',
+      hardwareConcurrency: navigator.hardwareConcurrency || 'unknown'
     });
   }, [lat, lon, zoom, tileCoords]);
   
-  // Fetch radar data from our API
+  // Fetch radar data from our API with retry logic
   const fetchRadarData = async () => {
     setIsLoading(true);
     setError(null);
     
     try {
+      // Pause animation while fetching new data
+      setAnimationPaused(true);
+      
       // Pass lat, lon, zoom, and opacity to the API to ensure proper alignment and appearance
       const response = await fetch(`/api/nws-radar?frameCount=${frameCount}&interval=${frameInterval}&lat=${lat}&lon=${lon}&zoom=${zoom}&opacity=${opacity}`);
       
@@ -81,6 +90,9 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
         throw new Error('No radar data available');
       }
       
+      // Reset retry count on successful fetch
+      fetchRetryCount.current = 0;
+      
       // Set the frames (newest to oldest)
       const newFrames = data.frames.reverse();
       setFrames(newFrames);
@@ -89,11 +101,29 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
       setLoadedFrames(new Array(newFrames.length).fill(false));
       setCurrentFrame(0);
       
+      // Resume animation after a short delay to allow the base map to stabilize
+      setTimeout(() => {
+        setAnimationPaused(false);
+      }, 1000);
+      
       // Don't set isLoading to false yet - we'll do that when all frames are loaded
     } catch (error) {
       console.error('Error fetching radar data:', error);
-      setError(error instanceof Error ? error.message : 'Failed to fetch radar data');
-      setIsLoading(false);
+      
+      // Implement retry logic
+      if (fetchRetryCount.current < maxRetries) {
+        fetchRetryCount.current++;
+        console.log(`Retrying radar data fetch (${fetchRetryCount.current}/${maxRetries})...`);
+        
+        // Exponential backoff for retries
+        setTimeout(() => {
+          fetchRadarData();
+        }, 2000 * Math.pow(2, fetchRetryCount.current - 1));
+      } else {
+        setError(error instanceof Error ? error.message : 'Failed to fetch radar data');
+        setIsLoading(false);
+        setAnimationPaused(false);
+      }
     }
   };
   
@@ -121,7 +151,7 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
       }
     } catch (error) {
       console.error('Error fetching weather alerts:', error);
-      setAlerts([]);
+      // Don't show an error for alerts - they're not critical
     }
   };
   
@@ -171,132 +201,183 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
       img.onload = () => {
         newLoadedFrames[index] = true;
         loadedCount++;
+        
+        // Update the loadedFrames state
         setLoadedFrames([...newLoadedFrames]);
         
-        // If all frames are loaded, set loading to false
+        // If all frames are loaded, set allFramesLoaded to true
         if (loadedCount === frames.length) {
-          setIsLoading(false);
           setAllFramesLoaded(true);
+          setIsLoading(false);
         }
       };
+      
       img.onerror = () => {
         console.error(`Failed to load radar frame ${index}`);
-        // Mark as loaded anyway to prevent blocking the animation
+        // Mark as loaded anyway to prevent infinite loading state
         newLoadedFrames[index] = true;
         loadedCount++;
+        
+        // Update the loadedFrames state
         setLoadedFrames([...newLoadedFrames]);
         
+        // If all frames are loaded, set allFramesLoaded to true
         if (loadedCount === frames.length) {
-          setIsLoading(false);
           setAllFramesLoaded(true);
+          setIsLoading(false);
         }
       };
+      
       img.src = frame.imageData;
     });
+    
+    // If there are no frames to load, set allFramesLoaded to true
+    if (frames.length === 0) {
+      setAllFramesLoaded(true);
+      setIsLoading(false);
+    }
   }, [frames]);
   
-  // Animation loop for radar frames - only start when all frames are loaded
+  // Handle base map loaded event
+  const handleBaseMapLoaded = () => {
+    setBaseMapLoaded(true);
+  };
+  
+  // Animate the radar frames
   useEffect(() => {
-    if (frames.length === 0 || !allFramesLoaded) return;
+    // Don't animate if there are no frames, if we're still loading, or if animation is paused
+    if (frames.length === 0 || isLoading || animationPaused) {
+      return;
+    }
     
-    const animate = () => {
-      setCurrentFrame(prev => (prev + 1) % frames.length);
-      
-      // Use setTimeout instead of requestAnimationFrame for more consistent timing
-      animationTimeoutRef.current = setTimeout(() => {
-        animationRef.current = requestAnimationFrame(animate);
-      }, 800); // Increased to 800ms for better performance on Raspberry Pi
+    // Don't start animation until base map is loaded
+    if (!baseMapLoaded) {
+      return;
+    }
+    
+    // Function to advance to the next frame
+    const advanceFrame = () => {
+      setCurrentFrame((prevFrame) => (prevFrame + 1) % frames.length);
     };
     
-    // Start animation
-    animationRef.current = requestAnimationFrame(animate);
+    // Set up the animation loop with a fixed frame rate of 5 seconds per frame
+    const frameRate = 5000; // 5 seconds per frame
     
+    // Clear any existing animation
+    if (animationTimeoutRef.current) {
+      clearTimeout(animationTimeoutRef.current);
+    }
+    
+    // Set up the next frame
+    animationTimeoutRef.current = setTimeout(() => {
+      advanceFrame();
+    }, frameRate);
+    
+    // Clean up on unmount
     return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
       if (animationTimeoutRef.current) {
         clearTimeout(animationTimeoutRef.current);
       }
     };
-  }, [frames, allFramesLoaded]);
+  }, [frames, currentFrame, isLoading, animationPaused, baseMapLoaded]);
   
-  // Animation loop for alerts
+  // Animate the weather alerts
   useEffect(() => {
-    if (alerts.length === 0) return;
+    if (alerts.length <= 1) return;
     
-    const animateAlerts = () => {
-      // Change alert every 8 seconds
-      const intervalId = setInterval(() => {
-        setCurrentAlert(prev => (prev + 1) % alerts.length);
-      }, 8000);
-      
-      return () => clearInterval(intervalId);
+    const advanceAlert = () => {
+      setCurrentAlert((prevAlert) => (prevAlert + 1) % alerts.length);
     };
     
-    const cleanup = animateAlerts();
+    // Change alert every 5 seconds
+    const alertInterval = setInterval(advanceAlert, 5000);
     
     return () => {
-      cleanup();
+      clearInterval(alertInterval);
     };
   }, [alerts]);
   
   return (
-    <>
-      <div 
-        ref={mapRef}
-        className={`nws-radar-map ${className}`} 
-        style={{ 
-          width, 
-          height,
-          overflow: 'hidden',
-          borderRadius: '8px',
-          backgroundColor: darkTheme ? '#121212' : 'rgba(0, 0, 0, 0.3)',
-          position: 'relative',
-        }}
-      >
-        {isLoading ? (
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'center', 
-            alignItems: 'center',
-            width: '100%',
-            height: '100%',
-            color: 'white',
-            flexDirection: 'column',
-          }}>
-            <div>Loading NWS radar data...</div>
-            {frames.length > 0 && (
-              <div style={{ marginTop: '10px', fontSize: '0.9rem' }}>
-                {loadedFrames.filter(Boolean).length} of {frames.length} frames loaded
-              </div>
-            )}
-          </div>
-        ) : error ? (
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'center', 
-            alignItems: 'center',
-            width: '100%',
-            height: '100%',
-            color: 'red',
-            padding: '20px',
-            textAlign: 'center',
-          }}>
-            Error: {error}
-          </div>
-        ) : (
-          <>
-            {/* Base map layer */}
-            <BaseMap 
-              tileCoords={tileCoords}
-              width={width}
-              height={height}
-              zoom={zoom}
-              darkTheme={darkTheme}
-            />
-            
-            {/* Radar frames */}
+    <div
+      ref={mapRef}
+      className={className}
+      style={{
+        position: 'relative',
+        width: width,
+        height: height,
+        overflow: 'hidden',
+        borderRadius: '10px',
+        boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
+      }}
+    >
+      {isLoading && (
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          color: 'white',
+          zIndex: 1000,
+          fontSize: '1.5rem',
+        }}>
+          Loading radar...
+        </div>
+      )}
+      
+      {error ? (
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center',
+          color: 'red',
+          padding: '20px',
+          textAlign: 'center',
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          zIndex: 1000,
+        }}>
+          Error: {error}
+          <button 
+            onClick={() => {
+              fetchRetryCount.current = 0;
+              fetchRadarData();
+            }}
+            style={{
+              marginTop: '10px',
+              padding: '5px 10px',
+              backgroundColor: '#333',
+              color: 'white',
+              border: 'none',
+              borderRadius: '5px',
+              cursor: 'pointer',
+            }}
+          >
+            Retry
+          </button>
+        </div>
+      ) : (
+        <>
+          {/* Base map layer */}
+          <BaseMap 
+            tileCoords={tileCoords}
+            width={width}
+            height={height}
+            zoom={zoom}
+            darkTheme={darkTheme}
+            onLoaded={handleBaseMapLoaded}
+          />
+          
+          {/* Radar frames */}
+          {baseMapLoaded && (
             <RadarOverlay 
               frames={frames}
               currentFrame={currentFrame}
@@ -304,53 +385,21 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
               darkTheme={darkTheme}
               loadedFrames={loadedFrames}
             />
-            
-            {/* Location marker */}
-            {showLocationMarker && <LocationMarker />}
-            
-            {/* NWS API indicator */}
-            <div style={{
-              position: 'absolute',
-              bottom: 5,
-              left: 5,
-              fontSize: '1.2rem',
-              color: 'white',
-              background: 'rgba(0, 0, 0, 0.7)',
-              padding: '3px 6px',
-              borderRadius: '3px',
-              zIndex: 100
-            }}>
-              NWS Radar
-            </div>
-            
-            {/* Frame interval indicator */}
-            <div style={{
-              position: 'absolute',
-              top: 5,
-              right: 5,
-              fontSize: '1.2rem',
-              color: 'white',
-              background: 'rgba(0, 0, 0, 0.7)',
-              padding: '3px 6px',
-              borderRadius: '3px',
-              zIndex: 100
-            }}>
-              {frameInterval}min intervals
-            </div>
-          </>
-        )}
-      </div>
-      
-      {/* Weather Alerts Display - Now positioned below the radar map */}
-      {!isLoading && !error && alerts.length > 0 && (
-        <div style={{ marginTop: '10px', width }}>
-          <WeatherAlerts 
-            alerts={alerts}
-            currentAlert={currentAlert}
-          />
-        </div>
+          )}
+          
+          {/* Location marker */}
+          {showLocationMarker && baseMapLoaded && <LocationMarker />}
+          
+          {/* Weather alerts */}
+          {alerts.length > 0 && (
+            <WeatherAlerts 
+              alerts={alerts} 
+              currentAlert={currentAlert}
+            />
+          )}
+        </>
       )}
-    </>
+    </div>
   );
 };
 

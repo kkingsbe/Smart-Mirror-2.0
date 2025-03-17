@@ -8,6 +8,7 @@ interface BaseMapProps {
   height: number;
   zoom: number;
   darkTheme: boolean;
+  onLoaded?: () => void; // Optional callback when base map has loaded
 }
 
 /**
@@ -19,11 +20,13 @@ const BaseMap: React.FC<BaseMapProps> = ({
   height,
   zoom,
   darkTheme,
+  onLoaded,
 }) => {
   const [loadedTiles, setLoadedTiles] = useState<Record<string, boolean>>({});
   const [tileErrors, setTileErrors] = useState<Record<string, boolean>>({});
   const [tileUrls, setTileUrls] = useState<Record<string, string>>({});
   const tilesInitialized = useRef(false);
+  const baseMapLoaded = useRef(false);
   
   // Add debugging in both development and production
   useEffect(() => {
@@ -80,6 +83,44 @@ const BaseMap: React.FC<BaseMapProps> = ({
       }
     }
   }, [loadedTiles, tileErrors, tileCoords, zoom]);
+
+  // Check if enough tiles have loaded to consider the base map ready
+  useEffect(() => {
+    // Consider the base map loaded when at least 50% of tiles are loaded
+    // or after a timeout to prevent waiting forever
+    const loadedCount = Object.values(loadedTiles).filter(Boolean).length;
+    const totalTiles = Object.keys(tileUrls).length;
+    
+    if (!baseMapLoaded.current && totalTiles > 0) {
+      if (loadedCount >= totalTiles * 0.5 || loadedCount >= 9) {
+        console.log(`BaseMap loaded: ${loadedCount}/${totalTiles} tiles`);
+        baseMapLoaded.current = true;
+        
+        // Call the onLoaded callback if provided
+        if (onLoaded) {
+          onLoaded();
+        }
+      }
+    }
+    
+    // Set a timeout to ensure the base map is considered loaded
+    // even if some tiles fail to load
+    const timeoutId = setTimeout(() => {
+      if (!baseMapLoaded.current && totalTiles > 0) {
+        console.log(`BaseMap timeout: ${loadedCount}/${totalTiles} tiles loaded`);
+        baseMapLoaded.current = true;
+        
+        // Call the onLoaded callback if provided
+        if (onLoaded) {
+          onLoaded();
+        }
+      }
+    }, 5000); // 5 second timeout
+    
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [loadedTiles, tileUrls, onLoaded]);
 
   // Calculate the offset to center the map on the exact coordinates
   const tileSize = 256;
