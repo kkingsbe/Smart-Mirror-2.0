@@ -9,12 +9,20 @@ export const useVisibility = ({ mapRef, onVisibilityChange }: UseVisibilityProps
   const [isVisible, setIsVisible] = useState<boolean>(true);
   const animationRef = useRef<number | null>(null);
   const animationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastVisibilityState = useRef<boolean>(true);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
+        const visibilityChanged = lastVisibilityState.current !== entry.isIntersecting;
+        lastVisibilityState.current = entry.isIntersecting;
+        
         setIsVisible(entry.isIntersecting);
-        onVisibilityChange?.(entry.isIntersecting);
+        
+        if (visibilityChanged) {
+          console.log(`Visibility changed to: ${entry.isIntersecting ? 'visible' : 'hidden'}`);
+          onVisibilityChange?.(entry.isIntersecting);
+        }
       },
       { threshold: 0.1 }
     );

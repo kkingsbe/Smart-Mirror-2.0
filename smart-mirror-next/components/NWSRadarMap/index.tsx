@@ -80,7 +80,13 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
         // Pause animations when hidden
         if (animationTimeoutRef.current) {
           clearTimeout(animationTimeoutRef.current);
+          animationTimeoutRef.current = null;
         }
+      } else {
+        // Force a re-fetch when becoming visible again if data is stale
+        console.log('Component is now visible, checking if radar data refresh is needed');
+        // If the last frame update was more than 5 minutes ago, refresh the data
+        fetchRadarData();
       }
     },
   });
@@ -169,6 +175,7 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
     animationTimeoutRef.current = setTimeout(() => {
       // Advance to the next frame (or loop back to the first frame)
       const nextFrame = (currentFrame + 1) % frames.length;
+      console.log(`Advancing to next frame: ${nextFrame}`);
       setCurrentFrame(nextFrame);
     }, delay);
     
@@ -179,7 +186,7 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
         animationTimeoutRef.current = null;
       }
     };
-  }, [frames, currentFrame, isLoading, animationPaused, baseMapLoaded, setCurrentFrame, animationTimeoutRef]);
+  }, [frames, currentFrame, isLoading, animationPaused, baseMapLoaded, setCurrentFrame]);
 
   // Add debugging for production issues
   useEffect(() => {

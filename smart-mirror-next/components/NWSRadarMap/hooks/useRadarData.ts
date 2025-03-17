@@ -66,13 +66,14 @@ export const useRadarData = ({
       setLoadedFrames(new Array(newFrames.length).fill(true));
       setCurrentFrame(0);
       
-      // Resume animation after a short delay to allow the base map to stabilize
-      setTimeout(() => {
-        setAnimationPaused(false);
-      }, 1000);
-      
       // Set loading to false after successful fetch
       setIsLoading(false);
+      
+      // Resume animation after a short delay to allow the base map to stabilize
+      setTimeout(() => {
+        console.log('Resuming radar animation');
+        setAnimationPaused(false);
+      }, 500);
       
     } catch (error) {
       console.error('Error fetching radar data:', error);

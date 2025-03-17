@@ -36,7 +36,7 @@ export default function Home() {
       <DateTime />
       
       <div className="flex flex-col items-center justify-center mt-auto mb-10">
-        <div className={`mb-4 w-full max-w-[960px] ${showWeatherGraph ? 'block' : 'hidden'}`}>
+        <div className={`mb-4 w-full max-w-[960px] transition-opacity duration-500 ${showWeatherGraph ? 'opacity-100' : 'opacity-0 absolute pointer-events-none'}`}>
           <WeatherGraph 
             lat={LOCATION.lat}
             lon={LOCATION.lon}
@@ -46,7 +46,7 @@ export default function Home() {
             darkTheme={true}
           />
         </div>
-        <div className={`${showWeatherGraph ? 'hidden' : 'block'}`}>
+        <div className={`transition-opacity duration-500 ${showWeatherGraph ? 'opacity-0 absolute pointer-events-none' : 'opacity-100'}`}>
           <NWSRadarMap 
             lat={LOCATION.lat}
             lon={LOCATION.lon}
