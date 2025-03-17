@@ -87,3 +87,13 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  .drop-shadow-glow {
+    filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.5));
+  }
+  
+  .text-shadow-glow {
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+  }
+}
