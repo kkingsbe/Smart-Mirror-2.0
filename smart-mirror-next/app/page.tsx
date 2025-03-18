@@ -5,6 +5,8 @@ import NWSRadarMap from '../components/NWSRadarMap';
 import DateTime from '../components/DateTime';
 import WeatherGraph from '../components/WeatherGraph';
 
+const modeInterval = 10000; // How often to toggle between modes (map, weather graph, etc)
+
 // Constants for location and display settings
 const LOCATION = {
   lat: 29.26224685583715,
@@ -26,13 +28,13 @@ export default function Home() {
     // Toggle between weather graph and radar map every minute
     const intervalId = setInterval(() => {
       setShowWeatherGraph(prev => !prev);
-    }, 60000); // 60000ms = 1 minute
+    }, modeInterval);
     
     return () => clearInterval(intervalId);
   }, []);
 
   return (
-    <main className="flex flex-col justify-center h-screen text-white bg-black">
+    <main className="flex flex-col justify-center h-screen text-white bg-black overflow-clip">
       <DateTime />
       
       <div className="relative w-full flex flex-col items-center justify-center mt-auto mb-10">
