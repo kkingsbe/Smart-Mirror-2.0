@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
 
+// Completely disable caching for this route
+export const dynamic = 'force-dynamic';
+
 // Default radius if not specified
 const DEFAULT_RADIUS = 500; // 200nm radius
 
@@ -55,7 +58,7 @@ export async function GET(request: Request) {
     // Get military flights
     const militaryResponse = await fetch(
       'https://api.adsb.lol/v2/mil',
-      { next: { revalidate: 15 } } // Revalidate every 15 seconds
+      { cache: 'no-store' } // Disable caching completely
     );
 
     if (!militaryResponse.ok) {
