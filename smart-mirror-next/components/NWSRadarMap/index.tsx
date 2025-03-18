@@ -47,18 +47,27 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
   const mapRef = useRef<HTMLDivElement>(null) as React.RefObject<HTMLDivElement>;
   const [baseMapLoaded, setBaseMapLoaded] = useState<boolean>(false);
   const [timeBasedInvertColors, setTimeBasedInvertColors] = useState<boolean>(shouldInvertColors());
+  const timeBasedInvertColorsIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Update invertColors based on time of day
+  // This effect runs independently of visibility state
   useEffect(() => {
     // Initial setting
     setTimeBasedInvertColors(shouldInvertColors());
     
     // Update every minute
-    const intervalId = setInterval(() => {
-      setTimeBasedInvertColors(shouldInvertColors());
+    timeBasedInvertColorsIntervalRef.current = setInterval(() => {
+      const shouldInvert = shouldInvertColors();
+      console.log(`Time check: ${new Date().toLocaleTimeString()} - Should invert: ${shouldInvert}`);
+      setTimeBasedInvertColors(shouldInvert);
     }, 60000); // Check every minute
     
-    return () => clearInterval(intervalId);
+    return () => {
+      if (timeBasedInvertColorsIntervalRef.current) {
+        clearInterval(timeBasedInvertColorsIntervalRef.current);
+        timeBasedInvertColorsIntervalRef.current = null;
+      }
+    };
   }, []);
 
   // Calculate tile coordinates from lat/lon for the base map
@@ -71,6 +80,11 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
 
   // Use prop value if provided, otherwise use time-based value
   const effectiveInvertColors = invertColors !== undefined ? invertColors : timeBasedInvertColors;
+
+  // Add debugging log when effectiveInvertColors changes
+  useEffect(() => {
+    console.log(`Color mode changed: invertColors prop=${invertColors}, timeBasedInvert=${timeBasedInvertColors}, effective=${effectiveInvertColors}`);
+  }, [effectiveInvertColors, invertColors, timeBasedInvertColors]);
 
   // Handle visibility and animations
   const { isVisible, animationTimeoutRef } = useVisibility({
