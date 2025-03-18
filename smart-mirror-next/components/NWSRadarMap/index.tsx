@@ -11,6 +11,7 @@ import { useRadarData } from './hooks/useRadarData';
 import { useWeatherAlerts } from './hooks/useWeatherAlerts';
 import { useFlightData } from './hooks/useFlightData';
 import { useVisibility } from './hooks/useVisibility';
+import { isLowPerformanceDevice } from '../utils/deviceDetection';
 
 /**
  * Determines if colors should be inverted based on time of day
@@ -48,6 +49,17 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
   const [baseMapLoaded, setBaseMapLoaded] = useState<boolean>(false);
   const [timeBasedInvertColors, setTimeBasedInvertColors] = useState<boolean>(shouldInvertColors());
   const timeBasedInvertColorsIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [isLowPerformance, setIsLowPerformance] = useState<boolean>(false);
+
+  // Detect low-performance devices on client side
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setIsLowPerformance(isLowPerformanceDevice());
+    }
+  }, []);
+
+  // Calculate actual frame count based on device performance
+  const effectiveFrameCount = isLowPerformance ? 1 : frameCount;
 
   // Update invertColors based on time of day
   // This effect runs independently of visibility state
@@ -120,7 +132,7 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
     lat,
     lon,
     zoom,
-    frameCount,
+    frameCount: effectiveFrameCount,
     frameInterval,
     opacity,
     isVisible,
@@ -215,9 +227,11 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
         height: window.innerHeight 
       } : null,
       deviceMemory: (navigator as { deviceMemory?: number }).deviceMemory || 'unknown',
-      hardwareConcurrency: navigator.hardwareConcurrency || 'unknown'
+      hardwareConcurrency: navigator.hardwareConcurrency || 'unknown',
+      isLowPerformanceDevice: isLowPerformance,
+      effectiveFrameCount
     });
-  }, [lat, lon, zoom, tileCoords]);
+  }, [lat, lon, zoom, tileCoords, isLowPerformance, effectiveFrameCount]);
 
   return (
     <div
@@ -268,6 +282,7 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
               opacity={opacity}
               darkTheme={darkTheme}
               loadedFrames={loadedFrames}
+              isLowPerformanceMode={isLowPerformance}
             />
           )}
           

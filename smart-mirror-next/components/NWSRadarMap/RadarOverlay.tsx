@@ -8,6 +8,7 @@ interface RadarOverlayProps {
   opacity: number;
   darkTheme: boolean;
   loadedFrames?: boolean[];
+  isLowPerformanceMode?: boolean;
 }
 
 /**
@@ -20,6 +21,7 @@ const RadarOverlay: React.FC<RadarOverlayProps> = ({
   opacity,
   darkTheme,
   loadedFrames = [],
+  isLowPerformanceMode = false,
 }) => {
   // Track if all images have been preloaded
   const [preloaded, setPreloaded] = useState<boolean[]>([]);
@@ -244,6 +246,11 @@ const RadarOverlay: React.FC<RadarOverlayProps> = ({
             minute: '2-digit',
             hour12: true
           })}
+          {isLowPerformanceMode && (
+            <span style={{ marginLeft: '6px', fontSize: '1rem', opacity: 0.8 }}>
+              (Static Mode)
+            </span>
+          )}
         </div>
       )}
     </>

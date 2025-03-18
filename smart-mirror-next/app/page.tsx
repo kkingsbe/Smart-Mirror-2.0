@@ -8,18 +8,18 @@ import WeatherGraph from '../components/WeatherGraph';
 const modeInterval = 60000; // How often to toggle between modes (map, weather graph, etc)
 
 // Constants for location and display settings
-// const LOCATION = {
-//   lat: 29.26224685583715,
-//   lon: -81.11348826187549
-// };
+const LOCATION = {
+  lat: 29.26224685583715,
+  lon: -81.11348826187549
+};
 // const LOCATION = {
 //   lat: 44.15626161999656,
 //   lon: -65.38186375532595
 // };
-const LOCATION = {
-  lat: 46.72137397010633,
-  lon: -94.35208245893267
-}
+// const LOCATION = {
+//   lat: 46.72137397010633,
+//   lon: -94.35208245893267
+// }
 
 export default function Home() {
   const [showWeatherGraph, setShowWeatherGraph] = useState(false);
