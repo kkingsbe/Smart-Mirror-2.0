@@ -204,6 +204,7 @@ const FlightOverlay: React.FC<FlightOverlayProps> = ({
     displayedFlights++;
     
     const color = getAltitudeColor(flight.alt_baro, invertColors);
+    const iconSize = 20; // Size of the icon
     
     return (
       <div 
@@ -212,34 +213,37 @@ const FlightOverlay: React.FC<FlightOverlayProps> = ({
           position: 'absolute',
           left: x,
           top: y,
-          transform: `translate(-50%, -50%)`,
-          color: color,
-          fontSize: '12px',
-          textShadow: textShadow,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          justifyContent: 'center',
+          color: color,
+          fontSize: '12px',
+          textShadow: textShadow,
           zIndex: 21, // Ensure aircraft are above other elements
         }}
       >
-        {/* Fighter jet icon for all aircraft with increased size */}
-        <div style={{ marginBottom: '4px', position: 'relative' }}>
+        {/* Fighter jet icon - positioned exactly at the aircraft coordinates */}
+        <div style={{ 
+          position: 'relative', 
+          marginBottom: '4px', 
+          transform: 'translate(-50%, -50%)' // Center only the icon at the exact coordinates
+        }}>
           <FighterJetIcon
             rotation={getRotation(flight.track)}
             invertColors={invertColors}
-            size={20} // Larger icon for better visibility
+            size={iconSize}
           />
         </div>
         
-        {/* Flight information with better contrast */}
+        {/* Flight information below the icon */}
         <div style={{ 
           color: textColor, 
           fontWeight: 'bold',
           backgroundColor: invertColors ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)',
           padding: '2px 4px',
           borderRadius: '3px',
-          fontSize: '13px'
+          fontSize: '13px',
+          transform: 'translateY(-50%)' // Bring text up closer to icon
         }}>
           {flight.t || 'Unknown'}
         </div>
@@ -249,7 +253,8 @@ const FlightOverlay: React.FC<FlightOverlayProps> = ({
           padding: '2px 4px',
           borderRadius: '3px',
           marginTop: '2px',
-          fontSize: '12px'
+          fontSize: '12px',
+          transform: 'translateY(-50%)' // Bring text up closer to icon
         }}>
           {flight.alt_baro ? `${Math.round(flight.alt_baro / 100) * 100}ft` : ''}
         </div>
