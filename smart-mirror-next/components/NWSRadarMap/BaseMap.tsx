@@ -31,6 +31,13 @@ const BaseMap: React.FC<BaseMapProps> = ({
   const tilesInitialized = useRef(false);
   const baseMapLoaded = useRef(false);
 
+  // Force tiles to reinitialize when theme or invertColors changes
+  useEffect(() => {
+    tilesInitialized.current = false;
+    baseMapLoaded.current = false;
+    setLoadedTiles({}); // Reset loaded tiles to force fresh loading
+  }, [darkTheme, invertColors]);
+
   // Check if enough tiles have loaded to consider the base map ready
   useEffect(() => {
     // Consider the base map loaded when at least 50% of tiles are loaded
@@ -120,6 +127,7 @@ const BaseMap: React.FC<BaseMapProps> = ({
       
       setTileUrls(newTileUrls);
       tilesInitialized.current = true;
+      console.log(`Initialized tile URLs with darkTheme=${darkTheme}, invertColors=${invertColors}`);
     }
   }, [tileCoords, zoom, darkTheme, contrast, invertColors, tileOffsets]);
   
