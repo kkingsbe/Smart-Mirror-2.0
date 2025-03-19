@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// Completely disable caching for this route
+export const dynamic = 'force-dynamic';
+
 // OpenWeatherMap API endpoint for hourly forecast
 const API_URL = 'https://api.openweathermap.org/data/2.5/forecast';
 // You should set this in your .env file

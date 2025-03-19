@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// Completely disable caching for this route
+export const dynamic = 'force-dynamic';
+
 /**
  * API route to fetch NWS radar data
  * 
