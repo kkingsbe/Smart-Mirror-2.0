@@ -157,8 +157,9 @@ export const calculatePixelCoordinates = (lat: number, lon: number, tileCoords: 
   const worldPixelY = mercatorY * scale * TILE_SIZE;
   
   // Get the pixel coordinates of the center of the map
-  const centerPixelX = (tileCoords.xtile + tileCoords.xFraction) * TILE_SIZE;
-  const centerPixelY = (tileCoords.ytile + tileCoords.yFraction) * TILE_SIZE;
+  // Using xtile and ytile directly for precise calculations
+  const centerPixelX = tileCoords.xtile * TILE_SIZE;
+  const centerPixelY = tileCoords.ytile * TILE_SIZE;
   
   // Calculate the viewport pixel coordinates relative to the center
   // Add width/2 and height/2 to center the offset in the viewport

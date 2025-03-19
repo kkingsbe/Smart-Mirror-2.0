@@ -9,10 +9,8 @@ interface FlightOverlayProps {
   mapWidth: number;
   mapHeight: number;
   zoom: number;
-  darkTheme?: boolean;
-  invertColors?: boolean;
-  // Optional offset correction in case the standard calculation needs adjustment
-  offsetCorrection?: { x: number, y: number };
+  darkTheme: boolean;
+  invertColors: boolean;
 }
 
 /**
@@ -106,7 +104,6 @@ const FlightOverlay: React.FC<FlightOverlayProps> = ({
   mapHeight,
   zoom,
   invertColors = false,
-  offsetCorrection,
 }) => {
   // Debug: Log the flights we're getting
   useEffect(() => {
@@ -199,13 +196,9 @@ const FlightOverlay: React.FC<FlightOverlayProps> = ({
       mapHeight
     );
 
-    // Apply offset correction if provided
-    const finalX = offsetCorrection ? x + offsetCorrection.x : x;
-    const finalY = offsetCorrection ? y + offsetCorrection.y : y;
-
     // Skip flights outside the visible area with a larger margin
     const padding = 100; // Increase padding to show more aircraft
-    if (finalX < -padding || finalX > mapWidth + padding || finalY < -padding || finalY > mapHeight + padding) return null;
+    if (x < -padding || x > mapWidth + padding || y < -padding || y > mapHeight + padding) return null;
     
     // Count displayed flights
     displayedFlights++;
@@ -217,8 +210,8 @@ const FlightOverlay: React.FC<FlightOverlayProps> = ({
         key={flight.hex}
         style={{
           position: 'absolute',
-          left: finalX,
-          top: finalY,
+          left: x,
+          top: y,
           transform: `translate(-50%, -50%)`,
           color: color,
           fontSize: '12px',

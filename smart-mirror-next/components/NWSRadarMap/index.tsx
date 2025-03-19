@@ -297,7 +297,6 @@ const NWSRadarMap: React.FC<NWSRadarMapProps> = ({
                 zoom={zoom}
                 darkTheme={darkTheme}
                 invertColors={effectiveInvertColors}
-                offsetCorrection={{ x: 0, y: 0 }} // Adjust if needed for calibration
               />
             </>
           )}
