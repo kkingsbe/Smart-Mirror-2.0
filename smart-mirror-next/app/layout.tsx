@@ -1,6 +1,19 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import dynamic from 'next/dynamic';
+
+// Import ErrorBoundary dynamically with no SSR to avoid issues with client components
+const ErrorBoundary = dynamic(
+  () => import('../components/ErrorBoundary'),
+  { ssr: false }
+);
+
+// Import ErrorHandler dynamically with no SSR
+const ErrorHandler = dynamic(
+  () => import('../components/ErrorHandler'),
+  { ssr: false }
+);
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,7 +40,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <ErrorHandler />
+        <ErrorBoundary>
+          {children}
+        </ErrorBoundary>
       </body>
     </html>
   );
