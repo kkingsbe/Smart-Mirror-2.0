@@ -30,7 +30,11 @@ export async function GET(request: NextRequest) {
   try {
     // Fetch 5-day forecast with 3-hour intervals (we'll filter to 24 hours)
     const response = await fetch(
-      `${API_URL}?lat=${lat}&lon=${lon}&units=imperial&appid=${API_KEY}`
+      `${API_URL}?lat=${lat}&lon=${lon}&units=imperial&appid=${API_KEY}`,
+      { 
+        cache: 'no-store', 
+        next: { revalidate: 0 }
+      }
     );
 
     if (!response.ok) {
@@ -65,7 +69,14 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    return NextResponse.json({ forecast: next24Hours });
+    return NextResponse.json({ forecast: next24Hours }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+        'Surrogate-Control': 'no-store'
+      }
+    });
   } catch (error) {
     console.error('Error fetching weather data:', error);
     return NextResponse.json(

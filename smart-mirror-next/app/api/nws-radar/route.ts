@@ -95,7 +95,10 @@ export async function GET(request: NextRequest) {
         const url = `https://opengeo.ncep.noaa.gov/geoserver/conus/conus_bref_qcd/ows?service=WMS&version=1.3.0&request=GetMap&layers=conus_bref_qcd&styles=&format=image/png&transparent=true&time=${formattedTime}&width=1024&height=768&crs=EPSG:3857&bbox=${bboxMercator.west},${bboxMercator.south},${bboxMercator.east},${bboxMercator.north}`;
         
         // Fetch the radar image
-        const response = await fetch(url);
+        const response = await fetch(url, {
+          cache: 'no-store',
+          next: { revalidate: 0 }
+        });
         
         if (!response.ok) {
           console.error(`Failed to fetch NWS radar data for time ${formattedTime}: ${response.status}`);

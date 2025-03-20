@@ -22,7 +22,9 @@ export async function GET(request: NextRequest) {
       headers: {
         'User-Agent': '(Smart Mirror, your-email@example.com)', // Replace with your contact info
         'Accept': 'application/geo+json'
-      }
+      },
+      cache: 'no-store',
+      next: { revalidate: 0 }
     });
     
     // If the location is not supported by NWS, return empty alerts
@@ -52,7 +54,9 @@ export async function GET(request: NextRequest) {
       headers: {
         'User-Agent': '(Smart Mirror, your-email@example.com)', // Replace with your contact info
         'Accept': 'application/geo+json'
-      }
+      },
+      cache: 'no-store',
+      next: { revalidate: 0 }
     });
     
     // If county data is not available, return empty alerts
@@ -83,7 +87,9 @@ export async function GET(request: NextRequest) {
       headers: {
         'User-Agent': '(Smart Mirror, your-email@example.com)', // Replace with your contact info
         'Accept': 'application/geo+json'
-      }
+      },
+      cache: 'no-store',
+      next: { revalidate: 0 }
     });
     
     if (!alertsResponse.ok) {
@@ -99,7 +105,9 @@ export async function GET(request: NextRequest) {
       headers: {
         'User-Agent': '(Smart Mirror, your-email@example.com)', // Replace with your contact info
         'Accept': 'application/geo+json'
-      }
+      },
+      cache: 'no-store',
+      next: { revalidate: 0 }
     });
     
     let areaAlerts = [];
