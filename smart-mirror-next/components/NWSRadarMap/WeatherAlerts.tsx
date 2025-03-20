@@ -149,16 +149,16 @@ const WeatherAlerts: React.FC<WeatherAlertsProps> = ({
         color: alertColor.text,
         background: alertColor.bg,
         padding: '8px 12px',
-        borderRadius: '4px',
+        borderRadius: '30px',
         boxShadow: '0 2px 4px rgba(0, 0, 0, 0.5)',
         border: '1px solid rgba(255, 255, 255, 0.2)',
         position: 'absolute',
-        top: '10px',
+        top: '30px',
         left: '0',
         right: '0',
         zIndex: 900,
         margin: '0 auto',
-        maxWidth: 'calc(100% - 20px)',
+        maxWidth: 'calc(100% - 60px)',
       }}
     >
       {/* Alert header with icon, title and counter */}
