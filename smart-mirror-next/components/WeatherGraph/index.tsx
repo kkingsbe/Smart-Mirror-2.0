@@ -14,6 +14,7 @@ import {
   ChartOptions,
   Filler,
   ChartData,
+  ChartArea,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 
@@ -195,44 +196,8 @@ const WeatherGraph: React.FC<WeatherGraphProps> = ({
     return `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
   };
 
-  // Get temperature color based on value
-  const getTemperatureColor = (temp: number): string => {
-    // Apple-style temperature gradient colors
-    if (temp <= 32) {
-      return 'rgba(79, 147, 205, 0.8)'; // Cold blue
-    } else if (temp <= 50) {
-      return 'rgba(124, 179, 217, 0.8)'; // Cool blue
-    } else if (temp <= 65) {
-      return 'rgba(173, 221, 142, 0.8)'; // Mild green
-    } else if (temp <= 78) {
-      return 'rgba(252, 211, 127, 0.8)'; // Warm yellow
-    } else if (temp <= 90) {
-      return 'rgba(249, 140, 90, 0.8)';  // Hot orange
-    } else {
-      return 'rgba(240, 80, 83, 0.8)';   // Very hot red
-    }
-  };
-
-  // Get temperature border color based on value (more saturated version of fill color)
-  const getTemperatureBorderColor = (temp: number): string => {
-    // Apple-style temperature gradient colors (more saturated for borders)
-    if (temp <= 32) {
-      return 'rgba(59, 127, 205, 1)'; // Cold blue
-    } else if (temp <= 50) {
-      return 'rgba(94, 159, 217, 1)'; // Cool blue
-    } else if (temp <= 65) {
-      return 'rgba(143, 201, 112, 1)'; // Mild green
-    } else if (temp <= 78) {
-      return 'rgba(252, 191, 87, 1)'; // Warm yellow
-    } else if (temp <= 90) {
-      return 'rgba(249, 120, 60, 1)';  // Hot orange
-    } else {
-      return 'rgba(240, 60, 63, 1)';   // Very hot red
-    }
-  };
-
   // Create a smooth gradient for the line border based on temperature range
-  const createLineBorderGradient = (ctx: CanvasRenderingContext2D, chartArea: any): CanvasGradient => {
+  const createLineBorderGradient = (ctx: CanvasRenderingContext2D, chartArea: ChartArea): CanvasGradient => {
     // The key is to ensure we use the exact same positioning for both gradients
     const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
     
@@ -249,7 +214,7 @@ const WeatherGraph: React.FC<WeatherGraphProps> = ({
   };
 
   // Create a full gradient based on temperature range for the area fill
-  const createFullGradient = (ctx: CanvasRenderingContext2D, chartArea: any): CanvasGradient => {
+  const createFullGradient = (ctx: CanvasRenderingContext2D, chartArea: ChartArea): CanvasGradient => {
     // Use the same positioning as the line gradient for consistency
     const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
     
