@@ -195,20 +195,71 @@ const WeatherGraph: React.FC<WeatherGraphProps> = ({
     return `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
   };
 
-  // Create gradient fill
-  const createGradient = (ctx: CanvasRenderingContext2D) => {
-    const gradient = ctx.createLinearGradient(0, 0, 0, graphContainerHeight);
-    
-    // Use different gradient colors based on theme
-    if (darkTheme) {
-      gradient.addColorStop(0, 'rgba(126, 231, 199, 0.6)');  // Light teal at top
-      gradient.addColorStop(0.3, 'rgba(83, 166, 192, 0.6)');  // Medium blue-teal
-      gradient.addColorStop(1, 'rgba(40, 80, 150, 0.6)');    // Dark blue at bottom
+  // Get temperature color based on value
+  const getTemperatureColor = (temp: number): string => {
+    // Apple-style temperature gradient colors
+    if (temp <= 32) {
+      return 'rgba(79, 147, 205, 0.8)'; // Cold blue
+    } else if (temp <= 50) {
+      return 'rgba(124, 179, 217, 0.8)'; // Cool blue
+    } else if (temp <= 65) {
+      return 'rgba(173, 221, 142, 0.8)'; // Mild green
+    } else if (temp <= 78) {
+      return 'rgba(252, 211, 127, 0.8)'; // Warm yellow
+    } else if (temp <= 90) {
+      return 'rgba(249, 140, 90, 0.8)';  // Hot orange
     } else {
-      gradient.addColorStop(0, 'rgba(126, 231, 199, 0.8)');  // Light teal at top (more opaque)
-      gradient.addColorStop(0.3, 'rgba(83, 166, 192, 0.8)');  // Medium blue-teal (more opaque)
-      gradient.addColorStop(1, 'rgba(40, 80, 150, 0.8)');    // Dark blue at bottom (more opaque)
+      return 'rgba(240, 80, 83, 0.8)';   // Very hot red
     }
+  };
+
+  // Get temperature border color based on value (more saturated version of fill color)
+  const getTemperatureBorderColor = (temp: number): string => {
+    // Apple-style temperature gradient colors (more saturated for borders)
+    if (temp <= 32) {
+      return 'rgba(59, 127, 205, 1)'; // Cold blue
+    } else if (temp <= 50) {
+      return 'rgba(94, 159, 217, 1)'; // Cool blue
+    } else if (temp <= 65) {
+      return 'rgba(143, 201, 112, 1)'; // Mild green
+    } else if (temp <= 78) {
+      return 'rgba(252, 191, 87, 1)'; // Warm yellow
+    } else if (temp <= 90) {
+      return 'rgba(249, 120, 60, 1)';  // Hot orange
+    } else {
+      return 'rgba(240, 60, 63, 1)';   // Very hot red
+    }
+  };
+
+  // Create a smooth gradient for the line border based on temperature range
+  const createLineBorderGradient = (ctx: CanvasRenderingContext2D, chartArea: any): CanvasGradient => {
+    // The key is to ensure we use the exact same positioning for both gradients
+    const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+    
+    // Calculate the relative position of 75°F within our temperature range
+    // This maps the temperature value to a position in the gradient (0-1)
+    const yellowPosition = Math.max(0, Math.min(1, (maxTemp - 75) / (maxTemp - minTemp)));
+    
+    // Green to yellow to red gradient with yellow positioned at 75°F - more vibrant colors
+    gradient.addColorStop(0, 'rgba(255, 30, 50, 1)');                // Bright red (hot)
+    gradient.addColorStop(yellowPosition, 'rgba(255, 220, 0, 1)');   // Bright yellow (at 75°F)
+    gradient.addColorStop(1, 'rgba(20, 220, 80, 1)');                // Bright green (cold)
+    
+    return gradient;
+  };
+
+  // Create a full gradient based on temperature range for the area fill
+  const createFullGradient = (ctx: CanvasRenderingContext2D, chartArea: any): CanvasGradient => {
+    // Use the same positioning as the line gradient for consistency
+    const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+    
+    // Calculate the relative position of 75°F within our temperature range
+    const yellowPosition = Math.max(0, Math.min(1, (maxTemp - 75) / (maxTemp - minTemp)));
+    
+    // Green to yellow to red gradient with transparency - more vibrant colors
+    gradient.addColorStop(0, 'rgba(255, 30, 50, 0.75)');                // Bright red (hot)
+    gradient.addColorStop(yellowPosition, 'rgba(255, 220, 0, 0.65)');   // Bright yellow (at 75°F)
+    gradient.addColorStop(1, 'rgba(20, 220, 80, 0.55)');                // Bright green (cold)
     
     return gradient;
   };
@@ -220,14 +271,23 @@ const WeatherGraph: React.FC<WeatherGraphProps> = ({
       {
         label: 'Temperature (°F)',
         data: weatherData.map(data => data.temp),
-        borderColor: 'rgba(255, 255, 255, 0.9)',
-        backgroundColor: function(context: {chart: {ctx: CanvasRenderingContext2D, chartArea?: {top: number, bottom: number, left: number, right: number}}}) {
+        borderColor: function(context) {
+          const chart = context.chart;
+          const {ctx, chartArea} = chart;
+          if (!chartArea) {
+            return 'rgba(255, 255, 255, 0.9)';
+          }
+          // Use smooth gradient for the line
+          return createLineBorderGradient(ctx, chartArea);
+        },
+        backgroundColor: function(context) {
           const chart = context.chart;
           const {ctx, chartArea} = chart;
           if (!chartArea) {
             return 'rgba(0, 0, 0, 0)';
           }
-          return createGradient(ctx);
+          // Use full gradient for the background
+          return createFullGradient(ctx, chartArea);
         },
         tension: 0.4,
         fill: true,

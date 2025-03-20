@@ -22,7 +22,7 @@ const LOCATION = {
 // }
 
 export default function Home() {
-  const [showWeatherGraph, setShowWeatherGraph] = useState(false);
+  const [showWeatherGraph, setShowWeatherGraph] = useState(true);
   
   useEffect(() => {
     // Toggle between weather graph and radar map every minute
