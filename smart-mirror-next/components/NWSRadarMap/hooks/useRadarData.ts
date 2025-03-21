@@ -46,7 +46,15 @@ export const useRadarData = ({
       }
       
       // Pass lat, lon, zoom, and opacity to the API to ensure proper alignment and appearance
-      const response = await fetch(`/api/nws-radar?frameCount=${frameCount}&interval=${frameInterval}&lat=${lat}&lon=${lon}&zoom=${zoom}&opacity=${opacity}`);
+      const timestamp = new Date().getTime(); // Add timestamp to prevent caching
+      const response = await fetch(`/api/nws-radar?frameCount=${frameCount}&interval=${frameInterval}&lat=${lat}&lon=${lon}&zoom=${zoom}&opacity=${opacity}&_t=${timestamp}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      });
       
       if (!response.ok) {
         throw new Error(`Failed to fetch radar data: ${response.status}`);
