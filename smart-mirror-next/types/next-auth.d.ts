@@ -1,0 +1,1 @@
+// This file is no longer needed as we've defined the types in auth.ts 

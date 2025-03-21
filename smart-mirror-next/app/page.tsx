@@ -4,6 +4,9 @@ import React, { useState, useEffect } from 'react';
 import NWSRadarMap from '../components/NWSRadarMap';
 import DateTime from '../components/DateTime';
 import WeatherGraph from '../components/WeatherGraph';
+import CalendarWidget from '../components/CalendarWidget';
+import CalendarLinkQR from '../components/CalendarLinkQR';
+import SimpleLinkButton from '../components/SimpleLinkButton';
 
 const modeInterval = 60000; // How often to toggle between modes (map, weather graph, etc)
 
@@ -65,6 +68,17 @@ export default function Home() {
           />
         </div>
       </div>
+      
+      {/* Calendar Widget - positioned in the top right */}
+      <div className="absolute top-20 right-6">
+        <CalendarWidget />
+      </div>
+      
+      {/* QR Code for easy Calendar Authentication */}
+      <CalendarLinkQR />
+      
+      {/* Alternative text-based link button */}
+      <SimpleLinkButton />
     </main>
   );
 }
