@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
       linked: true,
       userName: tokenData.credentials.user?.name || "Google User",
       linkedAt: tokenData.linkedAt ? 
-        (tokenData.linkedAt.toDate ? tokenData.linkedAt.toDate() : tokenData.linkedAt) : 
+        ('toDate' in tokenData.linkedAt ? tokenData.linkedAt.toDate() : tokenData.linkedAt) : 
         null
     });
   } catch (error) {
