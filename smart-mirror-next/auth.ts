@@ -39,6 +39,42 @@ export const {
       },
     }),
   ],
+  // Add cookie configuration to address PKCE issues
+  cookies: {
+    sessionToken: {
+      name: `next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 30 * 24 * 60 * 60 // 30 days
+      }
+    },
+    callbackUrl: {
+      name: `next-auth.callback-url`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production"
+      }
+    },
+    csrfToken: {
+      name: `next-auth.csrf-token`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production"
+      }
+    }
+  },
+  // Extend the session maxAge to ensure it doesn't expire too quickly
+  session: {
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+    strategy: "jwt",
+  },
   callbacks: {
     async jwt({ token, account }) {
       // Persist the OAuth access_token and refresh_token to the token
