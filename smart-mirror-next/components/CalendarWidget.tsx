@@ -341,7 +341,7 @@ const CalendarWidget = () => {
 
   return (
     <div className="p-4 bg-black bg-opacity-90 rounded-lg w-full border border-gray-800">
-      <h2 className="text-xl font-semibold mb-4 text-cyan-300">Today's Events</h2>
+      <h2 className="text-xl font-semibold mb-4 text-cyan-300">Today&apos;s Events</h2>
       
       {checkingAuth && <p className="text-white">Initializing calendar connection...</p>}
       
