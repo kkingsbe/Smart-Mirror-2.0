@@ -20,8 +20,8 @@ import { isLowPerformanceDevice } from '../utils/deviceDetection';
 const shouldInvertColors = (): boolean => {
   const now = new Date();
   const hour = now.getHours();
-  // Invert colors between 8am (8) and 6pm (18)
-  return hour >= 8 && hour < 18;
+  // Invert colors between 8am (8) and 8pm (20)
+  return hour >= 8 && hour < 20;
 };
 
 /**
