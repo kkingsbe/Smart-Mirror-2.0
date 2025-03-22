@@ -38,8 +38,15 @@ export default function Home() {
 
   return (
     <main className="flex flex-col justify-center h-screen text-white bg-black overflow-hidden">
+      {/* DateTime at the top */}
       <DateTime />
       
+      {/* Calendar Widget - positioned between DateTime and Weather components with proper spacing */}
+      <div className="mx-auto w-full max-w-[960px] px-4 -mt-10 mb-6">
+        <CalendarWidget />
+      </div>
+      
+      {/* Weather components */}
       <div className="relative w-full flex flex-col items-center justify-center mt-auto mb-10 h-[720px]">
         <div className={`transition-opacity duration-500 w-full max-w-[960px] mx-auto absolute ${showWeatherGraph ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
           <WeatherGraph 
@@ -67,11 +74,6 @@ export default function Home() {
             showFlights={true} // Show military flights from the dedicated endpoint
           />
         </div>
-      </div>
-      
-      {/* Calendar Widget - positioned in the top right */}
-      <div className="absolute top-20 right-6">
-        <CalendarWidget />
       </div>
       
       {/* QR Code for easy Calendar Authentication */}

@@ -42,18 +42,22 @@ export async function GET(req: NextRequest) {
 
     const calendar = google.calendar({ version: "v3", auth: oauth2Client });
     
-    // Get events from the primary calendar for the next 7 days
+    // Get events from the primary calendar for the current day only
     const now = new Date();
-    const oneWeekLater = new Date(now);
-    oneWeekLater.setDate(oneWeekLater.getDate() + 7);
+    // Set start of day time (00:00:00)
+    const startOfDay = new Date(now);
+    startOfDay.setHours(0, 0, 0, 0);
+    // Set end of day time (23:59:59)
+    const endOfDay = new Date(now);
+    endOfDay.setHours(23, 59, 59, 999);
     
     const response = await calendar.events.list({
       calendarId: "primary",
-      timeMin: now.toISOString(),
-      timeMax: oneWeekLater.toISOString(),
+      timeMin: startOfDay.toISOString(),
+      timeMax: endOfDay.toISOString(),
       singleEvents: true,
       orderBy: "startTime",
-      maxResults: 10,
+      maxResults: 20,
     });
 
     const events = response.data.items || [];

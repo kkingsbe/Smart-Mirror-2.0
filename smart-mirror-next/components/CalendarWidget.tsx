@@ -287,30 +287,70 @@ const CalendarWidget = () => {
     return date.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
   };
 
-  // Group events by date
+  // Group events by date - now only focus on today's events
   const groupedEvents = events.reduce((groups: Record<string, CalendarEvent[]>, event) => {
     const dateKey = event.start.dateTime 
       ? new Date(event.start.dateTime).toDateString() 
       : (event.start.date ? new Date(event.start.date).toDateString() : 'Unknown');
     
-    if (!groups[dateKey]) {
-      groups[dateKey] = [];
+    // Only show today's events
+    const today = new Date().toDateString();
+    if (dateKey === today) {
+      if (!groups[dateKey]) {
+        groups[dateKey] = [];
+      }
+      
+      groups[dateKey].push(event);
     }
-    
-    groups[dateKey].push(event);
     return groups;
   }, {});
 
+  // Helper function to sort events by time
+  const sortEventsByTime = (events: CalendarEvent[]) => {
+    return [...events].sort((a, b) => {
+      const aTime = a.start.dateTime ? new Date(a.start.dateTime).getTime() : 0;
+      const bTime = b.start.dateTime ? new Date(b.start.dateTime).getTime() : 0;
+      return aTime - bTime;
+    });
+  };
+
+  // Get current time for displaying the time indicator
+  const now = new Date();
+  const currentHour = now.getHours();
+  const currentMinute = now.getMinutes();
+  const currentTimeFormatted = `${currentHour}:${currentMinute.toString().padStart(2, '0')}`;
+
+  // Function to determine if an event is happening now
+  const isEventHappeningNow = (event: CalendarEvent) => {
+    if (!event.start.dateTime || !event.end.dateTime) return false;
+    
+    const startTime = new Date(event.start.dateTime).getTime();
+    const endTime = new Date(event.end.dateTime).getTime();
+    const currentTime = now.getTime();
+    
+    return currentTime >= startTime && currentTime <= endTime;
+  };
+
+  // Function to determine if an event has passed
+  const isEventPassed = (event: CalendarEvent) => {
+    if (!event.end.dateTime) return false;
+    
+    const endTime = new Date(event.end.dateTime).getTime();
+    const currentTime = now.getTime();
+    
+    return currentTime > endTime;
+  };
+
   return (
-    <div className="p-4 bg-black bg-opacity-70 rounded-lg max-w-md w-full">
-      <h2 className="text-xl font-semibold mb-4">Upcoming Events</h2>
+    <div className="p-4 bg-black bg-opacity-90 rounded-lg w-full border border-gray-800">
+      <h2 className="text-xl font-semibold mb-4 text-cyan-300">Today's Events</h2>
       
-      {checkingAuth && <p>Initializing calendar connection...</p>}
+      {checkingAuth && <p className="text-white">Initializing calendar connection...</p>}
       
       {!checkingAuth && !isAuthenticated && mirrorToken && (
         <div className="text-center">
           <p className="text-red-400 mb-3">Calendar not connected</p>
-          <p className="text-sm mb-3">To connect your calendar, scan this QR code with your phone:</p>
+          <p className="text-sm text-white mb-3">To connect your calendar, scan this QR code with your phone:</p>
           <div className="bg-white p-3 rounded-lg mb-3 mx-auto w-fit">
             <img 
               src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`${window.location.origin}/calendar/link/${mirrorToken}`)}`}
@@ -319,12 +359,12 @@ const CalendarWidget = () => {
             />
           </div>
           <p className="text-xs text-gray-400">
-            Or visit: <span className="text-blue-400 break-all">{`${window.location.origin}/calendar/link/${mirrorToken}`}</span>
+            Or visit: <span className="text-cyan-400 break-all">{`${window.location.origin}/calendar/link/${mirrorToken}`}</span>
           </p>
         </div>
       )}
       
-      {!checkingAuth && isAuthenticated && loading && <p>Loading calendar events...</p>}
+      {!checkingAuth && isAuthenticated && loading && <p className="text-white">Loading calendar events...</p>}
       
       {!checkingAuth && isAuthenticated && linkedAccount && !loading && (
         <div className="flex justify-between items-center text-xs text-gray-400 mb-2">
@@ -347,25 +387,98 @@ const CalendarWidget = () => {
       )}
       
       {!checkingAuth && isAuthenticated && !loading && !error && events.length === 0 && (
-        <p>No upcoming events</p>
+        <p className="text-white">No events today</p>
       )}
       
-      {Object.entries(groupedEvents).map(([dateStr, dayEvents]) => (
-        <div key={dateStr} className="mb-4">
-          <h3 className="text-lg font-medium mb-1">{formatEventDate(dateStr)}</h3>
-          <ul className="space-y-2">
-            {dayEvents.map(event => (
-              <li key={event.id} className="bg-gray-800 p-2 rounded">
-                <div className="flex justify-between">
-                  <span className="font-medium">{event.summary}</span>
-                  <span className="text-sm text-gray-300">{formatEventTime(event)}</span>
+      {Object.entries(groupedEvents).map(([dateStr, dayEvents]) => {
+        const sortedEvents = sortEventsByTime(dayEvents);
+        let currentTimeLine: React.ReactNode = null;
+        
+        // Find if we need to insert the current time indicator
+        let timeInserted = false;
+        
+        return (
+          <div key={dateStr} className="mb-4">
+            <h3 className="text-lg font-medium mb-1 text-magenta-400">{formatEventDate(dateStr)}</h3>
+            <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 relative">
+              {sortedEvents.map((event, index) => {
+                // Add current time indicator logic
+                if (!timeInserted && event.start.dateTime) {
+                  const eventStart = new Date(event.start.dateTime);
+                  const prevEvent = index > 0 ? sortedEvents[index-1] : null;
+                  const isPrevEventEnded = prevEvent && 
+                                          prevEvent.end.dateTime && 
+                                          now > new Date(prevEvent.end.dateTime);
+                  
+                  if (now < eventStart && (index === 0 || isPrevEventEnded)) {
+                    // Insert time indicator before this event
+                    timeInserted = true;
+                    currentTimeLine = (
+                      <div key="current-time" className="col-span-full w-full border-t-2 border-magenta-500 my-2 relative">
+                        <span className="absolute top-0 right-0 transform -translate-y-1/2 bg-black px-1 rounded text-magenta-400 text-xs border border-magenta-500">
+                          {currentTimeFormatted}
+                        </span>
+                      </div>
+                    );
+                  }
+                }
+                
+                // Add highlight for events happening now or styling for past events
+                const isHappeningNow = isEventHappeningNow(event);
+                const isPassed = isEventPassed(event);
+                
+                // Check if event has valid start dateTime before comparing
+                const hasValidStartTime = event.start.dateTime !== undefined;
+                
+                return (
+                  <React.Fragment key={event.id}>
+                    {index === 0 && !timeInserted && hasValidStartTime && now < new Date(event.start.dateTime!) && (
+                      <div className="col-span-full w-full border-t-2 border-magenta-500 my-2 relative">
+                        <span className="absolute top-0 right-0 transform -translate-y-1/2 bg-black px-1 rounded text-magenta-400 text-xs border border-magenta-500">
+                          {currentTimeFormatted}
+                        </span>
+                      </div>
+                    )}
+                    {currentTimeLine}
+                    <li className={`bg-black border border-gray-800 p-2 rounded 
+                      ${isHappeningNow ? 'border-l-4 border-l-cyan-500' : ''} 
+                      ${isPassed ? 'opacity-40' : ''}`}
+                    >
+                      <div className="flex justify-between">
+                        <span className={`font-medium ${isHappeningNow ? 'text-cyan-300' : 'text-white'}`}>{event.summary}</span>
+                        <span className="text-sm text-cyan-400 whitespace-nowrap ml-2">{formatEventTime(event)}</span>
+                      </div>
+                      {event.location && <p className="text-sm text-gray-400 truncate">{event.location}</p>}
+                    </li>
+                    {/* Reset current time line after using it */}
+                    {(() => { currentTimeLine = null; return null; })()}
+                  </React.Fragment>
+                );
+              })}
+              
+              {/* If time hasn't been inserted yet and we've gone through all events, add it at the end */}
+              {!timeInserted && sortedEvents.length > 0 && 
+               sortedEvents[sortedEvents.length-1].end.dateTime !== undefined && 
+               now > new Date(sortedEvents[sortedEvents.length-1].end.dateTime!) && (
+                <div className="col-span-full w-full border-t-2 border-magenta-500 my-2 relative">
+                  <span className="absolute top-0 right-0 transform -translate-y-1/2 bg-black px-1 rounded text-magenta-400 text-xs border border-magenta-500">
+                    {currentTimeFormatted}
+                  </span>
                 </div>
-                {event.location && <p className="text-sm text-gray-400">{event.location}</p>}
-              </li>
-            ))}
-          </ul>
-        </div>
-      ))}
+              )}
+              
+              {/* If no events, just show the time line */}
+              {sortedEvents.length === 0 && (
+                <div className="col-span-full w-full border-t-2 border-magenta-500 my-2 relative">
+                  <span className="absolute top-0 right-0 transform -translate-y-1/2 bg-black px-1 rounded text-magenta-400 text-xs border border-magenta-500">
+                    {currentTimeFormatted}
+                  </span>
+                </div>
+              )}
+            </ul>
+          </div>
+        );
+      })}
     </div>
   );
 };
