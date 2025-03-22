@@ -70,6 +70,14 @@ export const {
       }
     }
   },
+  // Configure trusted hosts to allow Netlify domain
+  trustHost: true,
+  // You can also explicitly list trusted hosts like this:
+  // headers: {
+  //   host: {
+  //     trust: ['localhost:3000', 'kyles-smart-mirror.netlify.app']
+  //   }
+  // },
   // Extend the session maxAge to ensure it doesn't expire too quickly
   session: {
     maxAge: 30 * 24 * 60 * 60, // 30 days
