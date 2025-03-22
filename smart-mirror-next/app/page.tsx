@@ -40,9 +40,9 @@ export default function Home() {
     <main className="flex flex-col justify-center h-screen text-white bg-black overflow-hidden">
       {/* DateTime at the top */}
       <DateTime />
-      
+
       {/* Calendar Widget - positioned between DateTime and Weather components with proper spacing */}
-      <div className="mx-auto w-full max-w-[960px] px-4 -mt-10 mb-6">
+      <div className="mx-auto w-full max-w-[960px] px-4 mt-auto mb-6">
         <CalendarWidget />
       </div>
       
