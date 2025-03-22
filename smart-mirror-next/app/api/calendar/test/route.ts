@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { hasToken, createToken } from "../../../../lib/serverTokenService";
 import { adminDb } from "../../../../lib/firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   return NextResponse.json({ 
     message: "API test endpoint is working!", 
     timestamp: new Date().toISOString() 
@@ -19,7 +18,7 @@ export async function POST(req: NextRequest) {
     try {
       body = await req.json();
       console.log("TEST API: Body parsed:", body);
-    } catch (err) {
+    } catch {
       console.log("TEST API: Could not parse request body as JSON");
     }
     
@@ -56,8 +55,8 @@ export async function POST(req: NextRequest) {
             linkedAt: null
           });
           console.log(`TEST API: Created token ${testToken}`);
-        } catch (err) {
-          console.error(`TEST API: Failed to create token ${testToken}:`, err);
+        } catch (error) {
+          console.error(`TEST API: Failed to create token ${testToken}:`, error);
         }
         
         // Verify it was created

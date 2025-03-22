@@ -1,11 +1,18 @@
 import { adminDb } from './firebase-admin';
-import { FieldValue } from 'firebase-admin/firestore';
+import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 
 // Define the token data interface
 export interface TokenData {
-  createdAt: any; // Firestore timestamp
-  credentials: any | null;
-  linkedAt?: any | null;
+  createdAt: Timestamp | FieldValue; // Firestore timestamp
+  credentials: {
+    accessToken?: string;
+    user?: {
+      name?: string | null;
+      email?: string | null;
+      image?: string | null;
+    };
+  } | null;
+  linkedAt?: Timestamp | FieldValue | null;
 }
 
 // Collection name for tokens

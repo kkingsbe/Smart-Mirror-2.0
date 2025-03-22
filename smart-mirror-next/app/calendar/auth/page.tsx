@@ -3,23 +3,9 @@
 import React, { useEffect, useState } from 'react';
 import { signIn, signOut, useSession } from 'next-auth/react';
 
-// Extend the Session type
-interface ExtendedSession {
-  accessToken?: string;
-  user?: {
-    name?: string | null;
-    email?: string | null;
-    image?: string | null;
-  };
-  expires: string;
-}
-
 export default function CalendarAuth() {
   const { data: session, status } = useSession();
   const [redirecting, setRedirecting] = useState(false);
-  
-  // Cast session to our extended type
-  const extendedSession = session as ExtendedSession | null;
 
   useEffect(() => {
     // If we have a session and access token, redirect after 3 seconds

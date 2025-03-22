@@ -1,20 +1,29 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { signIn, signOut, useSession } from 'next-auth/react';
+import { NextPage } from 'next';
 
-export default function CalendarLinkPage({ params }: { params: { token: string } }) {
-  // Access the token directly from params
+// Define a type for the API response
+interface ApiResponse {
+  success?: boolean;
+  message?: string;
+  error?: string;
+  details?: string;
+  raw?: string;
+  [key: string]: unknown; // For any other properties that might be in the response
+}
+
+const CalendarLinkPage: NextPage<{ params: { token: string } }> = ({ params }) => {
   const { token } = params;
-  
   const { data: session, status } = useSession();
   const [isLinking, setIsLinking] = useState(false);
   const [linkSuccess, setLinkSuccess] = useState(false);
   const [linkError, setLinkError] = useState<string | null>(null);
-  const [apiResponse, setApiResponse] = useState<any>(null);
+  const [apiResponse, setApiResponse] = useState<ApiResponse | null>(null);
   
   // Function to notify the Smart Mirror about successful authentication
-  const notifyMirror = () => {
+  const notifyMirror = useCallback(() => {
     console.log('Notifying mirror about successful authentication');
     
     // Method 1: Use BroadcastChannel API for same-origin communication
@@ -76,10 +85,10 @@ export default function CalendarLinkPage({ params }: { params: { token: string }
     .catch(err => {
       console.error('Test API error:', err);
     });
-  };
+  }, [token]);
   
   // Function to link the mirror with Google credentials
-  const linkMirror = async () => {
+  const linkMirror = useCallback(async () => {
     if (!session?.accessToken || isLinking || linkSuccess) return;
     
     setIsLinking(true);
@@ -112,7 +121,7 @@ export default function CalendarLinkPage({ params }: { params: { token: string }
       console.log('Response body (text):', responseText);
       
       // Try to parse as JSON
-      let data;
+      let data: ApiResponse;
       try {
         data = JSON.parse(responseText);
         console.log('Response parsed as JSON:', data);
@@ -142,14 +151,14 @@ export default function CalendarLinkPage({ params }: { params: { token: string }
     } finally {
       setIsLinking(false);
     }
-  };
+  }, [session, isLinking, linkSuccess, token, notifyMirror]);
   
   // Wait for the session to be available, then link the mirror
   useEffect(() => {
     if (session?.accessToken && !isLinking && !linkSuccess) {
       linkMirror();
     }
-  }, [session, isLinking, linkSuccess, token]);
+  }, [session, isLinking, linkSuccess, linkMirror]);
 
   // Send another notification when the component unmounts if link was successful
   useEffect(() => {
@@ -158,7 +167,7 @@ export default function CalendarLinkPage({ params }: { params: { token: string }
         notifyMirror();
       }
     };
-  }, [linkSuccess]);
+  }, [linkSuccess, notifyMirror]);
 
   // Try the test API endpoint
   useEffect(() => {
@@ -215,7 +224,7 @@ export default function CalendarLinkPage({ params }: { params: { token: string }
             )}
             
             <p className="text-gray-300 mb-4">
-              You're signed in as <span className="font-medium">{session.user?.name || 'User'}</span>.
+              You&apos;re signed in as <span className="font-medium">{session.user?.name || 'User'}</span>.
             </p>
             
             <p className="text-gray-300 mb-4">
@@ -285,4 +294,6 @@ export default function CalendarLinkPage({ params }: { params: { token: string }
       </div>
     </div>
   );
-} 
+};
+
+export default CalendarLinkPage; 

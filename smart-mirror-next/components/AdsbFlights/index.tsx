@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 interface Flight {
   hex: string;
@@ -29,30 +29,26 @@ export default function AdsbFlights({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchFlights = async () => {
+  const fetchFlights = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    
     try {
-      setLoading(true);
-      const response = await fetch('/api/adsb-flights');
+      const response = await fetch(`/api/adsb?max=${maxFlights}`);
       
       if (!response.ok) {
-        throw new Error(`Failed to fetch flights: ${response.status}`);
+        throw new Error(`HTTP error! Status: ${response.status}`);
       }
       
       const data = await response.json();
-      // Sort flights by distance
-      const sortedFlights = data.ac?.sort((a: Flight, b: Flight) => 
-        (a.distance || Infinity) - (b.distance || Infinity)
-      ) || [];
-      
-      setFlights(sortedFlights.slice(0, maxFlights));
-      setError(null);
+      setFlights(data.flights || []);
     } catch (err) {
       console.error('Error fetching flight data:', err);
       setError('Failed to fetch flight data');
     } finally {
       setLoading(false);
     }
-  };
+  }, [maxFlights]);
 
   useEffect(() => {
     fetchFlights();
@@ -62,7 +58,7 @@ export default function AdsbFlights({
     }, refreshInterval * 1000);
     
     return () => clearInterval(intervalId);
-  }, [refreshInterval, maxFlights]);
+  }, [refreshInterval, fetchFlights]);
 
   if (error) {
     return <div className="text-red-500">Error: {error}</div>;

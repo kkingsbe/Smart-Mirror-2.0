@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { createToken, cleanupOldTokens } from "../../../../lib/serverTokenService";
 
 // Generate a unique, readable token for the mirror
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     // Generate a random token
     const token = crypto.randomBytes(4).toString('hex');
