@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { signIn, signOut, useSession } from 'next-auth/react';
-import { NextPage } from 'next';
 
 // Define a type for the API response
 interface ApiResponse {
@@ -14,8 +13,15 @@ interface ApiResponse {
   [key: string]: unknown; // For any other properties that might be in the response
 }
 
-const CalendarLinkPage: NextPage<{ params: { token: string } }> = ({ params }) => {
-  const { token } = params;
+// Define the params type
+interface PageParams {
+  token: string;
+}
+
+const CalendarLinkPage = ({ params }: { params: Promise<PageParams> }) => {
+  // Unwrap params with React.use() before accessing its properties
+  const unwrappedParams = React.use(params);
+  const token = unwrappedParams.token;
   const { data: session, status } = useSession();
   const [isLinking, setIsLinking] = useState(false);
   const [linkSuccess, setLinkSuccess] = useState(false);
