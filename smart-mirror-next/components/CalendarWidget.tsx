@@ -316,9 +316,7 @@ const CalendarWidget = () => {
 
   // Get current time for displaying the time indicator
   const now = new Date();
-  const currentHour = now.getHours();
-  const currentMinute = now.getMinutes();
-  const currentTimeFormatted = `${currentHour}:${currentMinute.toString().padStart(2, '0')}`;
+  const currentTimeFormatted = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
   // Function to determine if an event is happening now
   const isEventHappeningNow = (event: CalendarEvent) => {
