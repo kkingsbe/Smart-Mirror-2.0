@@ -130,6 +130,13 @@ export async function GET(request: NextRequest) {
       interval,
       bbox: bbox, // Include the bounding box in the response
       opacity: opacity // Include the opacity in the response
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+        'Surrogate-Control': 'no-store'
+      }
     });
     
   } catch (error) {
