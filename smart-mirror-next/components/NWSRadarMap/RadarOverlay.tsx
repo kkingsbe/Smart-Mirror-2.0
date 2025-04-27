@@ -90,41 +90,54 @@ const RadarOverlay: React.FC<RadarOverlayProps> = ({
       
       // Create a new image element
       const img = new window.Image();
-      img.src = frames[frameIndex].imageData;
+      const frameData = frames[frameIndex];
+      if (frameData && frameData.imageData) {
+        img.src = frameData.imageData;
       
-      img.onload = () => {
-        setPreloaded(prev => {
-          const newState = [...prev];
-          newState[frameIndex] = true;
-          return newState;
-        });
+        img.onload = () => {
+          setPreloaded(prev => {
+            const newState = [...prev];
+            newState[frameIndex] = true;
+            return newState;
+          });
+          
+          loadIndex++;
+          // Add a small delay between loading images to prevent overwhelming the device
+          setTimeout(loadNextImage, 50);
+        };
         
-        loadIndex++;
-        // Add a small delay between loading images to prevent overwhelming the device
-        setTimeout(loadNextImage, 50);
-      };
-      
-      img.onerror = () => {
-        console.error(`Failed to load radar frame ${frameIndex}`);
+        img.onerror = () => {
+          console.error(`Failed to load radar frame ${frameIndex}`);
+          setLoadErrors(prev => {
+            const newState = [...prev];
+            newState[frameIndex] = true;
+            return newState;
+          });
+          
+          // If the current frame fails to load, try to reload it after a delay
+          if (frameIndex === currentFrame && renderAttempt < 3) {
+            setTimeout(() => {
+              setRenderAttempt(prev => prev + 1);
+            }, 1000);
+          }
+          
+          loadIndex++;
+          setTimeout(loadNextImage, 50);
+        };
+        
+        // Store reference to the image
+        imagesRef.current[frameIndex] = img;
+      } else {
+        // Handle the case where frame data or imageData is missing
+        console.error(`Frame data or imageData missing for index ${frameIndex}`);
         setLoadErrors(prev => {
           const newState = [...prev];
           newState[frameIndex] = true;
           return newState;
         });
-        
-        // If the current frame fails to load, try to reload it after a delay
-        if (frameIndex === currentFrame && renderAttempt < 3) {
-          setTimeout(() => {
-            setRenderAttempt(prev => prev + 1);
-          }, 1000);
-        }
-        
         loadIndex++;
-        setTimeout(loadNextImage, 50);
-      };
-      
-      // Store reference to the image
-      imagesRef.current[frameIndex] = img;
+        setTimeout(loadNextImage, 10); // Continue loading other images
+      }
     };
     
     // Start loading images
@@ -164,7 +177,7 @@ const RadarOverlay: React.FC<RadarOverlayProps> = ({
               visibility: 'visible',
             }}
           >
-            {preloaded[index] && !loadErrors[index] && (
+            {preloaded[index] && !loadErrors[index] && frame && frame.imageData && (
               <Image
                 src={frame.imageData}
                 alt={`Weather radar frame ${index + 1}`}
