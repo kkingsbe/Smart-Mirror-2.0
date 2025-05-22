@@ -9,8 +9,8 @@ const modeInterval = 60000; // How often to toggle between modes (map, weather g
 
 // Constants for location and display settings
 const LOCATION = {
-  lat: 29.26224685583715,
-  lon: -81.11348826187549
+  lat: 38.853702281786155,
+  lon: -77.11780778547161
 };
 // const LOCATION = {
 //   lat: 44.15626161999656,
